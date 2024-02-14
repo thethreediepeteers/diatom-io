@@ -166,10 +166,8 @@ impl Message {
                 let mut index = offset + 1;
                 for _ in 0..length {
                     let key = Message::decode(&buf[index..]);
-                    println!("key {}+{} {:?}", index, key.length(), &buf[index..]);
                     index += key.length();
                     let value = Message::decode(&buf[index..]);
-                    println!("value {}+{} {:?}", index, value.length(), &buf[index..]);
                     index += value.length();
                     o.push((key, value));
                 }
