@@ -17,5 +17,11 @@ features = [
   "MessageEvent",
   "ProgressEvent",
   "WebSocket",
-  "console"
+  "console",
+  "Window",
+  "CanvasRenderingContext2d",
+  "Document",
+  "Element",
+  "HtmlCanvasElement",
+  "Performance"
 ]

@@ -1,6 +1,10 @@
 use protocol::Message as ProtocolMessage;
 use web_sys::{
-    console, js_sys::Uint8Array, wasm_bindgen::{closure::Closure, JsCast, JsValue}, BinaryType, MessageEvent, WebSocket
+    console,
+    js_sys::{Math::random, Uint8Array},
+    wasm_bindgen::{closure::Closure, JsCast},
+    window, BinaryType, CanvasRenderingContext2d, HtmlCanvasElement, MessageEvent,
+    WebSocket,
 };
 
 mod protocol;
@@ -33,4 +37,52 @@ fn main() {
         .as_ref()
         .unchecked_ref(),
     ));
+
+    let window = window().unwrap();
+    let document = window.document().unwrap();
+    let canvas = document
+        .get_element_by_id("canvas")
+        .unwrap()
+        .dyn_into::<HtmlCanvasElement>()
+        .unwrap();
+    canvas.set_width(window.inner_width().unwrap().as_f64().unwrap() as u32);
+    canvas.set_height(window.inner_height().unwrap().as_f64().unwrap() as u32);
+
+    game_loop();
+}
+
+fn game_loop() {
+    let window = window().unwrap();
+    let document = window.document().unwrap();
+    let canvas = document
+        .get_element_by_id("canvas")
+        .unwrap()
+        .dyn_into::<HtmlCanvasElement>()
+        .unwrap();
+    canvas.set_width(window.inner_width().unwrap().as_f64().unwrap() as u32);
+    canvas.set_height(window.inner_height().unwrap().as_f64().unwrap() as u32);
+    let ctx = canvas
+        .get_context("2d")
+        .unwrap()
+        .unwrap()
+        .dyn_into::<CanvasRenderingContext2d>()
+        .unwrap();
+
+    ctx.set_fill_style(&format!("rgb({}, {}, {})", random() * 255.0, random() * 255.0, random() * 255.0).into());
+    ctx.fill_rect(
+        random() * canvas.width() as f64,
+        random() * canvas.height() as f64,
+        100.0,
+        100.0,
+    );
+
+    let closure = Closure::wrap(Box::new(move |ctx: CanvasRenderingContext2d| {
+        game_loop();
+    }) as Box<dyn FnMut(_)>);
+
+    window
+        .request_animation_frame(closure.as_ref().unchecked_ref())
+        .unwrap();
+
+    closure.forget();
 }
