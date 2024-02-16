@@ -1,1 +1,0 @@
-futures_util::future::Select<Pin<&mut ()>, Pin<&mut Forward<futures_util::stream::Map<futures_channel::mpsc::UnboundedReceiver<Message>, fn(Message) -> Result<Message, tokio_tungstenite::tungstenite::Error> {Result::<Message, tokio_tungstenite::tungstenite::Error>::Ok}>, SplitSink<WebSocketStream<tokio::net::TcpStream>, Message>>>>
