@@ -1,17 +1,19 @@
 <!DOCTYPE html><html><head>
-        <title>Game</title>
-        <link rel="stylesheet" href="/main-3222f8a00bcd181d.css" integrity="sha384-c1C27iDHnUIWdqduClyzPwy8PP_LVNap0rG541AnQFtxt5wmE-tK5RaHLaXMewhv">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-<link rel="preload" href="/game-client-3d92247875642bf9_bg.wasm" as="fetch" type="application/wasm" crossorigin="anonymous" integrity="sha384-yVXJnn3mE7qaAxRQqJQtgwqXboCNFxd6efVgYm47C-2N9xkZ4JzLJBN5hzm1NuzM">
-<link rel="modulepreload" href="/game-client-3d92247875642bf9.js" crossorigin="anonymous" integrity="sha384-ZecJodrtdxPDicrn6AYLWcKw6PYqOj7Vu0sAxpse438TVP9VAZEiHWDh6HOSOxQB"></head>
-    <body>
-        <canvas id="canvas"></canvas>
-    
+    <title>Game</title>
+    <link rel="stylesheet" href="/main-3222f8a00bcd181d.css" integrity="sha384-c1C27iDHnUIWdqduClyzPwy8PP_LVNap0rG541AnQFtxt5wmE-tK5RaHLaXMewhv">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="preload" href="/game-client-10453fead648770d_bg.wasm" as="fetch" type="application/wasm" crossorigin="anonymous" integrity="sha384-EQfCWQByaAHVRSkH1LKeVz78Uo2MzdjrTjwuZWhEhnA7ylsfpTIzlj8wih4rrugI">
+<link rel="modulepreload" href="/game-client-10453fead648770d.js" crossorigin="anonymous" integrity="sha384-3m4Ad6cconCKBXl3oc6tdgaMqCI9toU22ySvVmJF9nTJOEWiP01kPllWGatnNGC1"></head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+
 
 <script type="module">
-import init, * as bindings from '/game-client-3d92247875642bf9.js';
-init('/game-client-3d92247875642bf9_bg.wasm');
+import init, * as bindings from '/game-client-10453fead648770d.js';
+init('/game-client-10453fead648770d_bg.wasm');
 window.wasmBindings = bindings;
 
 </script><script>"use strict";

@@ -37,7 +37,7 @@ async fn main() {
 async fn game_loop(clients: Clients) {
     loop {
         for (_index, client) in clients.lock().unwrap().iter() {
-            client.talk(client.entity.pos.encode());
+            client.talk(client.entity.encode());
         }
         tokio::time::sleep(Duration::from_millis(1000 / 60)).await;
     }
@@ -98,7 +98,7 @@ impl Client {
             index,
             tx,
             addr,
-            entity: Entity::new(0.0, 0.0, 0.0, 5),
+            entity: Entity::new(0.0, 100.0, 0.0, 5),
         }
     }
 
@@ -107,6 +107,10 @@ impl Client {
     }
 
     fn handle_message(&self, msg: Message) {
+        if let Message::Close(_) = msg {
+            return;
+        }
+        
         println!(
             "{}: {:?}",
             self.index,
