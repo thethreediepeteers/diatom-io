@@ -5,7 +5,7 @@ use std::{
     collections::HashMap,
     net::SocketAddr,
     sync::{Arc, Mutex},
-    time::Duration
+    time::Duration,
 };
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
@@ -36,8 +36,10 @@ async fn main() {
 
 async fn game_loop(clients: Clients) {
     loop {
-        for (_index, client) in clients.lock().unwrap().iter() {
-            client.talk(client.entity.encode());
+        let unlocked_clients = clients.lock().unwrap();
+
+        for client in unlocked_clients.values() {
+            client.send_buks(&clients);
         }
         tokio::time::sleep(Duration::from_millis(1000 / 60)).await;
     }
@@ -103,14 +105,16 @@ impl Client {
     }
 
     fn talk(&self, msg: ProtocolMessage) {
-        self.tx.unbounded_send(Message::Binary(msg.encode())).unwrap();
+        self.tx
+            .unbounded_send(Message::Binary(msg.encode()))
+            .unwrap();
     }
 
     fn handle_message(&self, msg: Message) {
         if let Message::Close(_) = msg {
             return;
         }
-        
+
         println!(
             "{}: {:?}",
             self.index,
@@ -130,29 +134,29 @@ struct XY {
 
 impl Messageable for XY {
     fn encode(&self) -> ProtocolMessage {
-        ProtocolMessage::Object(vec![(
+        ProtocolMessage::Array(vec![
             ProtocolMessage::Float32(self.x),
             ProtocolMessage::Float32(self.y),
-        )])
+        ])
     }
 }
 
 struct Entity {
-    id: u16,
+    id: i32,
     pos: XY,
     size: f32,
     angle: f32,
-    sides: u8,
+    shape: u8,
 }
 
 impl Entity {
-    pub fn new(x: f32, y: f32, size: f32, sides: u8) -> Self {
+    pub fn new(x: f32, y: f32, size: f32, shape: u8) -> Self {
         Self {
             id: 0,
             pos: XY { x, y },
             size,
             angle: 0.0,
-            sides,
+            shape,
         }
     }
 }
@@ -160,11 +164,11 @@ impl Entity {
 impl Messageable for Entity {
     fn encode(&self) -> ProtocolMessage {
         ProtocolMessage::Array(vec![
-            ProtocolMessage::Uint16(self.id),
+            ProtocolMessage::Int32(self.id),
             self.pos.encode(),
             ProtocolMessage::Float32(self.size),
             ProtocolMessage::Float32(self.angle),
-            ProtocolMessage::Uint8(self.sides),
+            ProtocolMessage::Uint8(self.shape),
         ])
     }
 }

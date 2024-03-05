@@ -1,10 +1,8 @@
-use gloo::console::console;
-use gloo_render::request_animation_frame;
 use protocol::Message as ProtocolMessage;
 use std::collections::HashMap;
 use web_sys::{
     console,
-    js_sys::{Reflect::get, Uint8Array},
+    js_sys::Uint8Array,
     wasm_bindgen::{closure::Closure, prelude::*, JsCast},
     window, BinaryType, CanvasRenderingContext2d, HtmlCanvasElement, MessageEvent, WebSocket,
 };
@@ -63,8 +61,6 @@ fn main() {
     game.tick();
 }
 
-type Entities = HashMap<i32, Entity>;
-
 static mut GAME: Option<Box<Game>> = None;
 
 fn new_game(ctx: CanvasRenderingContext2d) {
@@ -75,9 +71,10 @@ fn get_game() -> &'static mut Game {
     unsafe { GAME.as_mut().unwrap_throw() }
 }
 
+type Entities = HashMap<i32, Entity>;
+
 struct Game {
     entities: Entities,
-    counter: i32,
     ctx: CanvasRenderingContext2d,
 }
 
@@ -85,21 +82,34 @@ impl Game {
     fn new(ctx: CanvasRenderingContext2d) -> Self {
         Self {
             entities: Entities::new(),
-            counter: 0,
             ctx,
         }
     }
 
     fn handle_message(&mut self, message: ProtocolMessage) {
         if let ProtocolMessage::Array(vec) = message {
-            console::log_1(&format!("handle_message: {:?}", vec).into());
+            if let [ProtocolMessage::Int32(id), ProtocolMessage::Array(pos), ProtocolMessage::Float32(size), ProtocolMessage::Float32(angle), ProtocolMessage::Uint8(shape)] =
+                vec.as_slice()
+            {
+                if let [ProtocolMessage::Float32(x), ProtocolMessage::Float32(y)] = pos.as_slice() {
+                    self.entities
+                        .entry(*id)
+                        .or_insert(Entity::new(*id, *x, *y, *size, *angle, *shape));
+                }
+                console::log_1(&format!("{:?}", &self.entities).into());
+            }
         }
     }
 
     fn tick(&mut self) {
         let ctx = &self.ctx;
         self.entities.values().for_each(|entity| {
-            ctx.fill_rect(entity.pos.x, entity.pos.y, 50.0, 50.0);
+            ctx.fill_rect(
+                entity.pos.x.into(),
+                entity.pos.y.into(),
+                entity.size.into(),
+                entity.size.into(),
+            );
         });
         let closure = Closure::<dyn FnMut()>::wrap(Box::new(move || {
             let game = get_game();
@@ -112,12 +122,29 @@ impl Game {
     }
 }
 
-struct Entity {
-    pos: XY,
-    size: u8,
+#[derive(Debug)]
+struct XY {
+    x: f32,
+    y: f32,
 }
 
-struct XY {
-    x: f64,
-    y: f64,
+#[derive(Debug)]
+struct Entity {
+    id: i32,
+    pos: XY,
+    size: f32,
+    angle: f32,
+    shape: u8,
+}
+
+impl Entity {
+    fn new(id: i32, x: f32, y: f32, size: f32, angle: f32, shape: u8) -> Self {
+        Self {
+            id,
+            pos: XY { x, y },
+            size,
+            angle,
+            shape,
+        }
+    }
 }
