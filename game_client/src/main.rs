@@ -4,7 +4,8 @@ use web_sys::{
     console,
     js_sys::Uint8Array,
     wasm_bindgen::{closure::Closure, prelude::*, JsCast},
-    window, BinaryType, CanvasRenderingContext2d, HtmlCanvasElement, MessageEvent, WebSocket,
+    window, BinaryType, CanvasRenderingContext2d, Event, HtmlCanvasElement, KeyboardEvent,
+    MessageEvent, WebSocket,
 };
 
 mod protocol;
@@ -39,6 +40,7 @@ fn main() {
     ));
 
     let window = window().unwrap();
+
     let document = window.document().unwrap();
     let canvas = document
         .get_element_by_id("canvas")
@@ -57,8 +59,59 @@ fn main() {
 
     new_game(ctx);
 
-    let game = get_game();
-    game.tick();
+    let cloned_socket = socket.clone();
+
+    gloo_events::EventListener::new(&window, "keydown", move |event: &Event| {
+        let event = event.clone().dyn_into::<KeyboardEvent>().unwrap_throw();
+
+        let char = event.key().chars().next().unwrap();
+
+        let keys = &mut get_game().keys;
+
+        if keys.contains_key(&char) {
+            keys.insert(char, true);
+        }
+
+        cloned_socket
+            .send_with_u8_array(
+                &ProtocolMessage::Array(vec![
+                    ProtocolMessage::Bool(*keys.get(&'w').unwrap()),
+                    ProtocolMessage::Bool(*keys.get(&'a').unwrap()),
+                    ProtocolMessage::Bool(*keys.get(&'s').unwrap()),
+                    ProtocolMessage::Bool(*keys.get(&'d').unwrap()),
+                ])
+                .encode(),
+            )
+            .unwrap_throw();
+    })
+    .forget();
+
+    gloo_events::EventListener::new(&window, "keyup", move |event: &Event| {
+        let event = event.clone().dyn_into::<KeyboardEvent>().unwrap_throw();
+
+        let char = event.key().chars().next().unwrap();
+
+        let keys = &mut get_game().keys;
+
+        if keys.contains_key(&char) {
+            keys.insert(char, false);
+        }
+
+        socket
+            .send_with_u8_array(
+                &ProtocolMessage::Array(vec![
+                    ProtocolMessage::Bool(*keys.get(&'w').unwrap()),
+                    ProtocolMessage::Bool(*keys.get(&'a').unwrap()),
+                    ProtocolMessage::Bool(*keys.get(&'s').unwrap()),
+                    ProtocolMessage::Bool(*keys.get(&'d').unwrap()),
+                ])
+                .encode(),
+            )
+            .unwrap_throw();
+    })
+    .forget();
+
+    get_game().tick();
 }
 
 static mut GAME: Option<Box<Game>> = None;
@@ -76,6 +129,7 @@ type Entities = HashMap<i32, Entity>;
 struct Game {
     entities: Entities,
     ctx: CanvasRenderingContext2d,
+    keys: HashMap<char, bool>,
 }
 
 impl Game {
@@ -83,26 +137,47 @@ impl Game {
         Self {
             entities: Entities::new(),
             ctx,
+            keys: HashMap::from([('a', false), ('d', false), ('w', false), ('s', false)]),
         }
     }
 
     fn handle_message(&mut self, message: ProtocolMessage) {
         if let ProtocolMessage::Array(vec) = message {
-            if let [ProtocolMessage::Int32(id), ProtocolMessage::Array(pos), ProtocolMessage::Float32(size), ProtocolMessage::Float32(angle), ProtocolMessage::Uint8(shape)] =
-                vec.as_slice()
-            {
-                if let [ProtocolMessage::Float32(x), ProtocolMessage::Float32(y)] = pos.as_slice() {
-                    self.entities
-                        .entry(*id)
-                        .or_insert(Entity::new(*id, *x, *y, *size, *angle, *shape));
+            for msg in &vec {
+                if let ProtocolMessage::Array(v) = msg {
+                    if let [ProtocolMessage::Int32(id), ProtocolMessage::Array(pos), ProtocolMessage::Float32(size)] =
+                        v.as_slice()
+                    {
+                        if let [ProtocolMessage::Float32(x), ProtocolMessage::Float32(y)] =
+                            pos.as_slice()
+                        {
+                            self.entities.insert(*id, Entity::new(*id, *x, *y, *size));
+                            console::log_1(&format!("{:?}", self.keys).into());
+                        }
+                    }
                 }
-                console::log_1(&format!("{:?}", &self.entities).into());
             }
         }
     }
 
     fn tick(&mut self) {
         let ctx = &self.ctx;
+        ctx.clear_rect(
+            0.0,
+            0.0,
+            window()
+                .unwrap_throw()
+                .inner_width()
+                .unwrap()
+                .as_f64()
+                .unwrap(),
+            window()
+                .unwrap_throw()
+                .inner_height()
+                .unwrap()
+                .as_f64()
+                .unwrap(),
+        );
         self.entities.values().for_each(|entity| {
             ctx.fill_rect(
                 entity.pos.x.into(),
@@ -115,7 +190,7 @@ impl Game {
             let game = get_game();
             game.tick();
         }));
-        web_sys::window()
+        window()
             .unwrap_throw()
             .request_animation_frame(closure.into_js_value().as_ref().unchecked_ref())
             .unwrap_throw();
@@ -133,18 +208,14 @@ struct Entity {
     id: i32,
     pos: XY,
     size: f32,
-    angle: f32,
-    shape: u8,
 }
 
 impl Entity {
-    fn new(id: i32, x: f32, y: f32, size: f32, angle: f32, shape: u8) -> Self {
+    fn new(id: i32, x: f32, y: f32, size: f32) -> Self {
         Self {
             id,
             pos: XY { x, y },
             size,
-            angle,
-            shape,
         }
     }
 }
