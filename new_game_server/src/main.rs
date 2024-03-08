@@ -118,9 +118,10 @@ async fn listen(
     ws_stream: WebSocketStream<TcpStream>,
     id: i32,
 ) {
-    let (ws_sender, mut ws_receiver) = ws_stream.split();
-    let connection = Connection::new(id, ws_sender);
+    let (mut ws_sender, mut ws_receiver) = ws_stream.split();
+    ws_sender.send(SocketMessage::Binary(Message::Int32(id).encode())).await.unwrap();
 
+    let connection = Connection::new(id, ws_sender);
     let _ = game_sender.send(GameEvent::Join(connection));
 
     while let Some(msg) = ws_receiver.next().await {
@@ -271,9 +272,9 @@ impl Game {
             id,
             Entity {
                 id,
-                pos: XY { x: id as f32 * 100.0, y: 0.0 },
+                pos: XY { x: 0.0, y: 0.0 },
                 vel: XY { x: 0.0, y: 0.0 },
-                size: 50.0,
+                size: 65.0,
                 keys: HashMap::from([('w', false), ('a', false), ('s', false), ('d', false)]),
             },
         );
