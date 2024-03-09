@@ -12,6 +12,7 @@ use web_sys::{
     WebSocket,
 };
 
+#[wasm_bindgen(start)]
 fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 

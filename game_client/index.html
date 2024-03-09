@@ -1,14 +1,26 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <title>Game</title>
-    <link data-trunk rel="css" href="./main.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game</title>
+  <link data-trunk rel="css" href="./main.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      justify-content: center;
+      align-items: center;
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+  </style>
+  <script type="module" defer>
+    import init from './pkg/game_client.js';
+    init();
+  </script>
 </head>
-
 <body>
-    <canvas id="canvas"></canvas>
+  <canvas id="canvas"></canvas>
 </body>
-
 </html>
