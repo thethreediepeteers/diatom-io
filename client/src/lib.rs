@@ -2,7 +2,11 @@ mod protocol;
 
 extern crate console_error_panic_hook;
 
-use gloo::{events::EventListener, utils::{document, window}};
+use gloo::{
+    console::console_dbg,
+    events::EventListener,
+    utils::{document, window},
+};
 use protocol::Message as ProtocolMessage;
 use std::{collections::HashMap, f64::consts::PI, panic};
 use web_sys::{
@@ -71,7 +75,7 @@ fn main() {
     EventListener::new(&window, "keydown", move |event: &Event| {
         let event = event.clone().dyn_into::<KeyboardEvent>().unwrap_throw();
 
-        let char = event.key().chars().next().unwrap();
+        let char = event.key().chars().next().unwrap().to_ascii_lowercase();
 
         let keys = &mut get_game().keys;
 
@@ -98,7 +102,7 @@ fn main() {
     EventListener::new(&window, "keyup", move |event: &Event| {
         let event = event.clone().dyn_into::<KeyboardEvent>().unwrap_throw();
 
-        let char = event.key().chars().next().unwrap();
+        let char = event.key().chars().next().unwrap().to_ascii_lowercase();
 
         let keys = &mut get_game().keys;
 
