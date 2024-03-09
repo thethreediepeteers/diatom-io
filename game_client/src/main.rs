@@ -2,14 +2,10 @@ mod protocol;
 
 extern crate console_error_panic_hook;
 
-use gloo::utils::{document, window};
+use gloo::{events::EventListener, utils::{document, window}};
 use protocol::Message as ProtocolMessage;
-use wasm_bindgen::convert::IntoWasmAbi;
-use web_sys::js_sys::parse_int;
-use std::panic;
-use std::{collections::HashMap, f64::consts::PI, hash::Hash};
+use std::{collections::HashMap, f64::consts::PI, panic};
 use web_sys::{
-    console,
     js_sys::Uint8Array,
     wasm_bindgen::{closure::Closure, prelude::*, JsCast},
     BinaryType, CanvasRenderingContext2d, Event, HtmlCanvasElement, KeyboardEvent, MessageEvent,
@@ -71,7 +67,7 @@ fn main() {
 
     let cloned_socket = socket.clone();
 
-    gloo_events::EventListener::new(&window, "keydown", move |event: &Event| {
+    EventListener::new(&window, "keydown", move |event: &Event| {
         let event = event.clone().dyn_into::<KeyboardEvent>().unwrap_throw();
 
         let char = event.key().chars().next().unwrap();
@@ -98,7 +94,7 @@ fn main() {
     })
     .forget();
 
-    gloo_events::EventListener::new(&window, "keyup", move |event: &Event| {
+    EventListener::new(&window, "keyup", move |event: &Event| {
         let event = event.clone().dyn_into::<KeyboardEvent>().unwrap_throw();
 
         let char = event.key().chars().next().unwrap();
@@ -150,8 +146,13 @@ struct Game {
 
 impl Game {
     fn new(ctx: CanvasRenderingContext2d) -> Self {
-        let colors: HashMap<&str, &str> =
-            HashMap::from([("grey", "#808080"), ("blue", "#00B0E1"), ("red", "#C83737")]);
+        let colors: HashMap<&str, &str> = HashMap::from([
+            ("grey", "#808080"),
+            ("blue", "#00B0E1"),
+            ("red", "#C83737"),
+            ("bg", "#BFBFBF"),
+            ("grid", "#8F8F8F"),
+        ]);
 
         Self {
             index: None,
@@ -223,7 +224,7 @@ impl Game {
         let height = window().inner_height().unwrap().as_f64().unwrap();
 
         ctx.clear_rect(0.0, 0.0, width, height);
-        ctx.set_fill_style(&JsValue::from_str("#bfbfbf"));
+        ctx.set_fill_style(&JsValue::from_str(self.colors.get("bg").unwrap()));
         ctx.fill_rect(0.0, 0.0, width, height);
 
         ctx.save();
@@ -245,6 +246,7 @@ impl Game {
             ctx.set_global_alpha(1.0);
 
             ctx.begin_path();
+
             ctx.arc(
                 entity.pos.x.into(),
                 entity.pos.y.into(),
@@ -255,12 +257,12 @@ impl Game {
             .unwrap();
 
             let color: &str;
-
             if entity.id == self.index.unwrap() {
                 color = self.colors.get("blue").unwrap();
             } else {
                 color = self.colors.get("red").unwrap();
             }
+
             ctx.set_fill_style(&JsValue::from_str(color));
             ctx.fill();
 
@@ -279,12 +281,16 @@ fn draw_grid(ctx: &CanvasRenderingContext2d, x: f32, y: f32, cell_size: f32) {
     let width = window().inner_width().unwrap().as_f64().unwrap();
     let height = window().inner_height().unwrap().as_f64().unwrap();
 
-    for i in (((width / 2.0 - x as f64) % cell_size as f64) as i32..width as i32).step_by(cell_size as usize) {
+    for i in (((width / 2.0 - x as f64) % cell_size as f64) as i32..width as i32)
+        .step_by(cell_size as usize)
+    {
         ctx.move_to(i.into(), 0.0);
         ctx.line_to(i.into(), height);
     }
 
-    for j in (((height / 2.0 - y as f64) % cell_size as f64) as i32..height as i32).step_by(cell_size as usize) {
+    for j in (((height / 2.0 - y as f64) % cell_size as f64) as i32..height as i32)
+        .step_by(cell_size as usize)
+    {
         ctx.move_to(0.0, j.into());
         ctx.line_to(width, j.into());
     }
@@ -292,7 +298,7 @@ fn draw_grid(ctx: &CanvasRenderingContext2d, x: f32, y: f32, cell_size: f32) {
     ctx.close_path();
 
     ctx.set_line_width(2.5);
-    ctx.set_stroke_style(&JsValue::from_str("#8f8f8f"));
+    ctx.set_stroke_style(&JsValue::from_str(get_game().colors.get("grid").unwrap()));
 
     ctx.stroke();
 }
