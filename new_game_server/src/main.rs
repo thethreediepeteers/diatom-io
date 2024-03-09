@@ -5,7 +5,6 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-
 use futures_util::{stream::SplitSink, FutureExt, SinkExt, StreamExt};
 use protocol::Message;
 use tokio::{

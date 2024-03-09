@@ -4,18 +4,16 @@ extern crate console_error_panic_hook;
 
 use gloo::utils::{document, window};
 use protocol::Message as ProtocolMessage;
-use wasm_bindgen::convert::IntoWasmAbi;
-use web_sys::js_sys::parse_int;
 use std::panic;
-use std::{collections::HashMap, f64::consts::PI, hash::Hash};
+use std::{collections::HashMap, f64::consts::PI};
 use web_sys::{
-    console,
     js_sys::Uint8Array,
     wasm_bindgen::{closure::Closure, prelude::*, JsCast},
     BinaryType, CanvasRenderingContext2d, Event, HtmlCanvasElement, KeyboardEvent, MessageEvent,
     WebSocket,
 };
 
+#[wasm_bindgen(start)]
 fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
