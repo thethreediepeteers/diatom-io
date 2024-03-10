@@ -177,8 +177,14 @@ impl Game {
                     {
                         if let [ProtocolMessage::Float32(x), ProtocolMessage::Float32(y)] =
                             pos.as_slice()
-                        {
-                            self.entities.insert(*id, Entity::new(*id, *x, *y, *size));
+                        {   
+                            if let None = self.entities.get(id) {
+                                self.entities.insert(*id, Entity::new(*id, *x, *y, *size));
+                            } else {
+                                self.entities.entry(*id).and_modify(|e| {
+                                    e.set_predict(*x, *y);
+                                });
+                            }
                         }
 
                         self.entities.retain(|id, _| {
@@ -202,15 +208,22 @@ impl Game {
     }
 
     fn tick(&mut self) {
+        self.update();
         self.render();
 
-        let closure = Closure::<dyn FnMut()>::wrap(Box::new(move || {
+        let closure = Closure::once_into_js(|| {
             let game = get_game();
             game.tick();
-        }));
+        });
         window()
-            .request_animation_frame(closure.into_js_value().as_ref().unchecked_ref())
+            .request_animation_frame(closure.as_ref().unchecked_ref())
             .unwrap_throw();
+    }
+
+    fn update(&mut self) {
+        for entity in self.entities.values_mut() {
+            entity.predict();
+        }
     }
 
     fn render(&self) {
@@ -247,7 +260,7 @@ impl Game {
         )
         .unwrap_throw();
 
-        self.entities.values().for_each(|entity| {
+        for entity in self.entities.values() {
             ctx.set_global_alpha(1.0);
 
             ctx.begin_path();
@@ -275,7 +288,7 @@ impl Game {
 
             ctx.set_stroke_style(&JsValue::from_str(&offset_hex(color, 30)));
             ctx.stroke();
-        });
+        }
 
         ctx.restore();
     }
@@ -330,15 +343,31 @@ struct XY {
 struct Entity {
     id: i32,
     pos: XY,
+    server_pos: XY,
     size: f32,
 }
 
 impl Entity {
-    fn new(id: i32, x: f32, y: f32, size: f32) -> Self {
+    pub fn new(id: i32, x: f32, y: f32, size: f32) -> Self {
         Self {
             id,
             pos: XY { x, y },
+            server_pos: XY { x, y },
             size,
         }
     }
+
+    pub fn set_predict(&mut self, x: f32, y: f32) {
+        self.server_pos.x = x;
+        self.server_pos.y = y;
+    }
+
+    pub fn predict(&mut self) {
+        self.pos.x = lerp(self.pos.x, self.server_pos.x);
+        self.pos.y = lerp(self.pos.y, self.server_pos.y);
+    }
+}
+
+fn lerp(a: f32, b: f32) -> f32 {
+    a + (b - a) / 5.0
 }
