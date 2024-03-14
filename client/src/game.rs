@@ -1,6 +1,10 @@
-use crate::{draw::draw_grid, util::offset_hex, entity::Entity, ProtocolMessage};
+use crate::{
+    draw::{draw_connecting, draw_disconnect, draw_entity, draw_grid},
+    entity::Entity,
+    ProtocolMessage,
+};
 use gloo_utils::window;
-use std::{collections::HashMap, f64::consts::PI};
+use std::collections::HashMap;
 use web_sys::{
     wasm_bindgen::{closure::Closure, prelude::*},
     CanvasRenderingContext2d,
@@ -9,7 +13,7 @@ use web_sys::{
 type Entities = HashMap<i32, Entity>;
 
 pub struct Game {
-    index: Option<i32>,
+    pub index: Option<i32>,
     entities: Entities,
     ctx: CanvasRenderingContext2d,
     pub keys: HashMap<char, bool>,
@@ -99,32 +103,13 @@ impl Game {
         ctx.fill_rect(0.0, 0.0, width, height);
 
         if self.index.is_none() || self.entities.get(&self.index.unwrap_throw()).is_none() {
-            ctx.set_fill_style(&JsValue::from_str("#FFFFFF"));
-            ctx.set_font("bold 48px sans-serif");
-            ctx.set_text_align("center");
-            ctx.set_text_baseline("middle");
-            ctx.fill_text("Connecting...", width / 2.0, height / 2.0)
-                .unwrap_throw();
+            draw_connecting(ctx);
+
             return;
         }
 
         if let Some(reason) = &self.disconnected {
-            ctx.set_fill_style(&JsValue::from_str("#FF0000"));
-            ctx.set_font("bold 48px sans-serif");
-            ctx.set_text_align("center");
-            ctx.set_text_baseline("middle");
-
-            if reason != "" {
-                ctx.fill_text(
-                    &format!("Disconnected: {}", reason),
-                    width / 2.0,
-                    height / 2.0,
-                )
-                .unwrap_throw();
-            } else {
-                ctx.fill_text("Disconnected", width / 2.0, height / 2.0)
-                    .unwrap_throw();
-            }
+            draw_disconnect(reason, ctx);
 
             return;
         }
@@ -147,34 +132,8 @@ impl Game {
         .unwrap_throw();
 
         for entity in self.entities.values_mut() {
-            ctx.set_global_alpha(1.0);
-
-            ctx.begin_path();
-
-            ctx.arc(
-                entity.pos.x.into(),
-                entity.pos.y.into(),
-                (entity.size / 2.0).into(),
-                0.0,
-                2.0 * PI,
-            )
-            .unwrap();
-
-            let color: &str;
-            if entity.id == self.index.unwrap() {
-                color = self.colors.get("blue").unwrap();
-            } else {
-                color = self.colors.get("red").unwrap();
-            }
-
-            ctx.set_fill_style(&JsValue::from_str(color));
-            ctx.fill();
-
-            ctx.set_line_width(5.0);
-
-            ctx.set_stroke_style(&JsValue::from_str(&offset_hex(color, 30)));
-            ctx.stroke();
-
+            draw_entity(ctx, entity);
+            
             entity.predict();
         }
 
