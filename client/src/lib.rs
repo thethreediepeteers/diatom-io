@@ -1,19 +1,21 @@
+mod draw;
+mod entity;
+mod game;
+mod listeners;
 mod protocol;
+mod util;
 
 extern crate console_error_panic_hook;
 
-use gloo::{
-    console::console_dbg,
-    events::EventListener,
-    utils::{document, window},
-};
+use game::{get_game, new_game, GAME};
+use gloo_utils::{document, window};
+use listeners::add_event_listeners;
 use protocol::Message as ProtocolMessage;
-use std::{collections::HashMap, f64::consts::PI, panic};
+use std::panic;
 use web_sys::{
     js_sys::Uint8Array,
-    wasm_bindgen::{closure::Closure, prelude::*, JsCast},
-    BinaryType, CanvasRenderingContext2d, Event, HtmlCanvasElement, KeyboardEvent, MessageEvent,
-    WebSocket,
+    wasm_bindgen::{self, closure::Closure, prelude::*, JsCast},
+    BinaryType, CanvasRenderingContext2d, CloseEvent, HtmlCanvasElement, MessageEvent, WebSocket,
 };
 
 #[wasm_bindgen(start)]
@@ -26,7 +28,7 @@ fn main() {
 
     socket.set_binary_type(BinaryType::Arraybuffer);
 
-    socket.clone().set_onmessage(Some(
+    socket.set_onmessage(Some(
         Closure::<dyn FnMut(_)>::new(move |event: MessageEvent| {
             let buf = event.data();
             let array = Uint8Array::new(&buf);
@@ -39,9 +41,14 @@ fn main() {
         .unchecked_ref(),
     ));
 
-    socket.clone().set_onopen(Some(
-        Closure::<dyn FnMut()>::new(move || {
-            // onopen
+    socket.set_onclose(Some(
+        Closure::<dyn FnMut(_)>::new(move |event: CloseEvent| {
+            unsafe {
+                if GAME.is_none() {
+                    return;
+                }
+            }
+            get_game().disconnected = Some(event.reason());
         })
         .into_js_value()
         .as_ref()
@@ -68,306 +75,9 @@ fn main() {
         .dyn_into::<CanvasRenderingContext2d>()
         .unwrap();
 
+    add_event_listeners(socket);
+
     new_game(ctx);
 
-    let cloned_socket = socket.clone();
-
-    EventListener::new(&window, "keydown", move |event: &Event| {
-        let event = event.clone().dyn_into::<KeyboardEvent>().unwrap_throw();
-
-        let char = event.key().chars().next().unwrap().to_ascii_lowercase();
-
-        let keys = &mut get_game().keys;
-
-        if keys.contains_key(&char) {
-            keys.insert(char, true);
-        }
-
-        if cloned_socket.ready_state() == 1 {
-            cloned_socket
-                .send_with_u8_array(
-                    &ProtocolMessage::Array(vec![
-                        ProtocolMessage::Bool(*keys.get(&'w').unwrap()),
-                        ProtocolMessage::Bool(*keys.get(&'a').unwrap()),
-                        ProtocolMessage::Bool(*keys.get(&'s').unwrap()),
-                        ProtocolMessage::Bool(*keys.get(&'d').unwrap()),
-                    ])
-                    .encode(),
-                )
-                .unwrap_throw();
-        }
-    })
-    .forget();
-
-    EventListener::new(&window, "keyup", move |event: &Event| {
-        let event = event.clone().dyn_into::<KeyboardEvent>().unwrap_throw();
-
-        let char = event.key().chars().next().unwrap().to_ascii_lowercase();
-
-        let keys = &mut get_game().keys;
-
-        if keys.contains_key(&char) {
-            keys.insert(char, false);
-        }
-
-        if socket.ready_state() == 1 {
-            socket
-                .send_with_u8_array(
-                    &ProtocolMessage::Array(vec![
-                        ProtocolMessage::Bool(*keys.get(&'w').unwrap()),
-                        ProtocolMessage::Bool(*keys.get(&'a').unwrap()),
-                        ProtocolMessage::Bool(*keys.get(&'s').unwrap()),
-                        ProtocolMessage::Bool(*keys.get(&'d').unwrap()),
-                    ])
-                    .encode(),
-                )
-                .unwrap_throw();
-        }
-    })
-    .forget();
-
     get_game().tick();
-}
-
-static mut GAME: Option<Box<Game>> = None;
-
-fn new_game(ctx: CanvasRenderingContext2d) {
-    unsafe { GAME = Some(Box::new(Game::new(ctx))) }
-}
-
-fn get_game() -> &'static mut Game {
-    unsafe { GAME.as_mut().unwrap_throw() }
-}
-
-type Entities = HashMap<i32, Entity>;
-
-struct Game {
-    index: Option<i32>,
-    entities: Entities,
-    ctx: CanvasRenderingContext2d,
-    keys: HashMap<char, bool>,
-    colors: HashMap<&'static str, &'static str>,
-}
-
-impl Game {
-    fn new(ctx: CanvasRenderingContext2d) -> Self {
-        let colors: HashMap<&str, &str> = HashMap::from([
-            ("grey", "#808080"),
-            ("blue", "#00B0E1"),
-            ("red", "#C83737"),
-            ("bg", "#BFBFBF"),
-            ("grid", "#8F8F8F"),
-        ]);
-
-        Self {
-            index: None,
-            entities: Entities::new(),
-            ctx,
-            keys: HashMap::from([('a', false), ('d', false), ('w', false), ('s', false)]),
-            colors,
-        }
-    }
-
-    fn handle_message(&mut self, message: ProtocolMessage) {
-        if let ProtocolMessage::Array(vec) = message {
-            for msg in &vec {
-                if let ProtocolMessage::Array(v) = msg {
-                    if let [ProtocolMessage::Int32(id), ProtocolMessage::Array(pos), ProtocolMessage::Float32(size)] =
-                        v.as_slice()
-                    {
-                        if let [ProtocolMessage::Float32(x), ProtocolMessage::Float32(y)] =
-                            pos.as_slice()
-                        {   
-                            if let None = self.entities.get(id) {
-                                self.entities.insert(*id, Entity::new(*id, *x, *y, *size));
-                            } else {
-                                self.entities.entry(*id).and_modify(|e| {
-                                    e.set_predict(*x, *y);
-                                });
-                            }
-                        }
-
-                        self.entities.retain(|id, _| {
-                            vec.iter().any(|m| match m {
-                                ProtocolMessage::Array(v) if v.len() == 3 => {
-                                    if let [ProtocolMessage::Int32(i), _, _] = v.as_slice() {
-                                        i == id
-                                    } else {
-                                        false
-                                    }
-                                }
-                                _ => false,
-                            })
-                        });
-                    }
-                }
-            }
-        } else if let ProtocolMessage::Int32(id) = message {
-            self.index = Some(id);
-        }
-    }
-
-    fn tick(&mut self) {
-        self.update();
-        self.render();
-
-        let closure = Closure::once_into_js(|| {
-            let game = get_game();
-            game.tick();
-        });
-        window()
-            .request_animation_frame(closure.as_ref().unchecked_ref())
-            .unwrap_throw();
-    }
-
-    fn update(&mut self) {
-        for entity in self.entities.values_mut() {
-            entity.predict();
-        }
-    }
-
-    fn render(&self) {
-        if let None = self.index {
-            return;
-        }
-        if let None = self.entities.get(&self.index.unwrap_throw()) {
-            return;
-        }
-
-        let me = self.entities.get(&self.index.unwrap_throw()).unwrap();
-
-        let ctx = &self.ctx;
-
-        let width = window().inner_width().unwrap().as_f64().unwrap();
-        let height = window().inner_height().unwrap().as_f64().unwrap();
-
-        ctx.clear_rect(0.0, 0.0, width, height);
-        ctx.set_fill_style(&JsValue::from_str(self.colors.get("bg").unwrap()));
-        ctx.fill_rect(0.0, 0.0, width, height);
-
-        ctx.save();
-
-        draw_grid(
-            ctx,
-            (width / 2.0) as f32 + me.pos.x,
-            (height / 2.0) as f32 + me.pos.y,
-            32.0,
-        );
-
-        ctx.translate(
-            width / 2.0 - me.pos.x as f64,
-            height / 2.0 - me.pos.y as f64,
-        )
-        .unwrap_throw();
-
-        for entity in self.entities.values() {
-            ctx.set_global_alpha(1.0);
-
-            ctx.begin_path();
-
-            ctx.arc(
-                entity.pos.x.into(),
-                entity.pos.y.into(),
-                (entity.size / 2.0).into(),
-                0.0,
-                2.0 * PI,
-            )
-            .unwrap();
-
-            let color: &str;
-            if entity.id == self.index.unwrap() {
-                color = self.colors.get("blue").unwrap();
-            } else {
-                color = self.colors.get("red").unwrap();
-            }
-
-            ctx.set_fill_style(&JsValue::from_str(color));
-            ctx.fill();
-
-            ctx.set_line_width(5.0);
-
-            ctx.set_stroke_style(&JsValue::from_str(&offset_hex(color, 30)));
-            ctx.stroke();
-        }
-
-        ctx.restore();
-    }
-}
-
-fn draw_grid(ctx: &CanvasRenderingContext2d, x: f32, y: f32, cell_size: f32) {
-    ctx.begin_path();
-    let width = window().inner_width().unwrap().as_f64().unwrap();
-    let height = window().inner_height().unwrap().as_f64().unwrap();
-
-    for i in (((width / 2.0 - x as f64) % cell_size as f64) as i32..width as i32)
-        .step_by(cell_size as usize)
-    {
-        ctx.move_to(i.into(), 0.0);
-        ctx.line_to(i.into(), height);
-    }
-
-    for j in (((height / 2.0 - y as f64) % cell_size as f64) as i32..height as i32)
-        .step_by(cell_size as usize)
-    {
-        ctx.move_to(0.0, j.into());
-        ctx.line_to(width, j.into());
-    }
-
-    ctx.close_path();
-
-    ctx.set_line_width(2.5);
-    ctx.set_stroke_style(&JsValue::from_str(get_game().colors.get("grid").unwrap()));
-
-    ctx.stroke();
-}
-
-fn offset_hex(hex_color: &str, offset: u8) -> String {
-    let mut r = u8::from_str_radix(&hex_color[1..3], 16).unwrap();
-    let mut g = u8::from_str_radix(&hex_color[3..5], 16).unwrap();
-    let mut b = u8::from_str_radix(&hex_color[5..7], 16).unwrap();
-
-    r = r.saturating_sub(offset);
-    g = g.saturating_sub(offset);
-    b = b.saturating_sub(offset);
-
-    format!("#{:02X}{:02X}{:02X}", r, g, b)
-}
-
-#[derive(Debug)]
-struct XY {
-    x: f32,
-    y: f32,
-}
-
-#[derive(Debug)]
-struct Entity {
-    id: i32,
-    pos: XY,
-    server_pos: XY,
-    size: f32,
-}
-
-impl Entity {
-    pub fn new(id: i32, x: f32, y: f32, size: f32) -> Self {
-        Self {
-            id,
-            pos: XY { x, y },
-            server_pos: XY { x, y },
-            size,
-        }
-    }
-
-    pub fn set_predict(&mut self, x: f32, y: f32) {
-        self.server_pos.x = x;
-        self.server_pos.y = y;
-    }
-
-    pub fn predict(&mut self) {
-        self.pos.x = lerp(self.pos.x, self.server_pos.x);
-        self.pos.y = lerp(self.pos.y, self.server_pos.y);
-    }
-}
-
-fn lerp(a: f32, b: f32) -> f32 {
-    a + (b - a) / 5.0
 }
