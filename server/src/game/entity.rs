@@ -27,7 +27,7 @@ impl Entity {
             id: self.id,
             pos: self.pos.clone(),
             vel: self.vel.clone(),
-            size: self.size.clone(),
+            size: self.size,
             keys: HashMap::new(),
         }
     }

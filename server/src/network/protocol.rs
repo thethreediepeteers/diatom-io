@@ -158,28 +158,28 @@ impl Message {
             0x02 => Message::Bool(false),
             0x03 => Message::Uint8(buf[1]),
             0x04 => Message::Int8(buf[1] as i8),
-            0x05 => Message::Uint16((buf[1] as u16) + ((buf[2] as u16) << 8) as u16),
+            0x05 => Message::Uint16((buf[1] as u16) + ((buf[2] as u16) << 8)),
             0x06 => Message::Int16((buf[1] as i16) + ((buf[2] as u16) << 8) as i16),
             0x07 => Message::Uint32(
                 (buf[1] as u32)
-                    + ((buf[2] as u32) << 8) as u32
-                    + ((buf[3] as u32) << 16) as u32
-                    + ((buf[4] as u32) << 24) as u32,
+                    + ((buf[2] as u32) << 8)
+                    + ((buf[3] as u32) << 16)
+                    + ((buf[4] as u32) << 24),
             ),
             0x08 => Message::Int32(
                 (buf[1] as i32)
-                    + ((buf[2] as i32) << 8) as i32
-                    + ((buf[3] as i32) << 16) as i32
-                    + ((buf[4] as i32) << 24) as i32,
+                    + ((buf[2] as i32) << 8)
+                    + ((buf[3] as i32) << 16)
+                    + ((buf[4] as i32) << 24),
             ),
             0x09 => Message::Uint64(
                 (buf[1] as u64)
-                    + ((buf[2] as u64) << 8) as u64
-                    + ((buf[3] as u64) << 16) as u64
-                    + ((buf[4] as u64) << 24) as u64
-                    + ((buf[5] as u64) << 32) as u64
-                    + ((buf[6] as u64) << 48) as u64
-                    + ((buf[7] as u64) << 56) as u64,
+                    + ((buf[2] as u64) << 8)
+                    + ((buf[3] as u64) << 16)
+                    + ((buf[4] as u64) << 24)
+                    + ((buf[5] as u64) << 32)
+                    + ((buf[6] as u64) << 48)
+                    + ((buf[7] as u64) << 56),
             ),
             0x0a => Message::Int64(i64::from_le_bytes(buf[1..9].try_into().unwrap())),
             0x0b => Message::Float32(f32::from_le_bytes(buf[1..5].try_into().unwrap())),
