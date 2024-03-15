@@ -56,7 +56,7 @@ pub fn draw_disconnect(reason: &String, ctx: &CanvasRenderingContext2d) {
     ctx.set_text_align("center");
     ctx.set_text_baseline("middle");
 
-    if reason != "" {
+    if !reason.is_empty() {
         ctx.fill_text(
             &format!("Disconnected: {}", reason),
             width / 2.0,
@@ -85,12 +85,11 @@ pub fn draw_entity(ctx: &CanvasRenderingContext2d, entity: &mut Entity) {
     )
     .unwrap();
 
-    let color: &str;
-    if entity.id == game.index.unwrap() {
-        color = game.colors.get("blue").unwrap();
+    let color: &str = if entity.id == game.index.unwrap() {
+        game.colors.get("blue").unwrap()
     } else {
-        color = game.colors.get("red").unwrap();
-    }
+        game.colors.get("red").unwrap()
+    };
 
     ctx.set_fill_style(&JsValue::from_str(color));
     ctx.fill();

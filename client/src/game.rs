@@ -51,7 +51,7 @@ impl Game {
                         if let [ProtocolMessage::Float32(x), ProtocolMessage::Float32(y)] =
                             pos.as_slice()
                         {
-                            if let None = self.entities.get(id) {
+                            if self.entities.get(id).is_none() {
                                 self.entities.insert(*id, Entity::new(*id, *x, *y, *size));
                             } else {
                                 self.entities.entry(*id).and_modify(|e| {
