@@ -22,7 +22,7 @@ use web_sys::{
 fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    let addr = "ws://localhost:3000";
+    let addr = "wss://verbose-lamp-g677q47p76q3vp6r-3000.app.github.dev/";
 
     let socket = WebSocket::new(addr).unwrap();
 
