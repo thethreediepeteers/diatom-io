@@ -22,7 +22,7 @@ use web_sys::{
 fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    let addr = "ws://localhost:3000";
+    let addr = "wss://diatom-io.onrender.com/";
 
     let socket = WebSocket::new(addr).unwrap();
 
