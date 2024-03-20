@@ -2,7 +2,7 @@ mod game;
 mod network;
 
 use futures_util::stream::SplitSink;
-use game::game::{Game, GameInput, GameState};
+use game::game::{Game, GameState};
 use network::{events::*, messages::*, protocol::Message, server::*};
 use std::thread;
 use tokio::{
@@ -15,7 +15,7 @@ const PORT: u16 = 3000;
 
 #[tokio::main]
 async fn main() {
-    let addr = format!("localhost:{}", PORT);
+    let addr = format!("0.0.0.0:{}", PORT);
 
     let listener = TcpListener::bind(&addr).await.unwrap();
 

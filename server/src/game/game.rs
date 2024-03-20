@@ -5,11 +5,6 @@ pub struct GameState {
     pub entities: Vec<Entity>,
 }
 
-#[derive(Debug)]
-pub struct GameInput {
-    pub keys: HashMap<char, bool>,
-}
-
 pub struct Game {
     players: HashMap<i32, Entity>,
 }
@@ -38,9 +33,17 @@ impl Game {
         self.players.remove(&id);
     }
 
-    pub fn set_input(&mut self, id: i32, input: GameInput) {
+    pub fn set_input(&mut self, id: i32, key: u8, value: bool) {
         if let Some(entity) = self.players.get_mut(&id) {
-            entity.keys = input.keys;
+            let char = match key {
+                0 => 'w',
+                1 => 'a',
+                2 => 's',
+                3 => 'd',
+                _ => 'w',
+            };
+
+            entity.keys.insert(char, value);
         }
     }
 

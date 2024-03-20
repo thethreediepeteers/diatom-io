@@ -16,7 +16,6 @@ pub struct Game {
     pub index: Option<i32>,
     entities: Entities,
     ctx: CanvasRenderingContext2d,
-    pub keys: HashMap<char, bool>,
     pub colors: HashMap<&'static str, &'static str>,
     pub disconnected: Option<String>,
 }
@@ -35,7 +34,6 @@ impl Game {
             index: None,
             entities: Entities::new(),
             ctx,
-            keys: HashMap::from([('a', false), ('d', false), ('w', false), ('s', false)]),
             colors,
             disconnected: None,
         }
@@ -133,7 +131,7 @@ impl Game {
 
         for entity in self.entities.values_mut() {
             draw_entity(ctx, entity);
-            
+
             entity.predict();
         }
 
