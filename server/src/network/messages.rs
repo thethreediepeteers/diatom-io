@@ -1,5 +1,5 @@
 use crate::{
-    game::entity::{Entity, XY},
+    game::{entity::Entity, hashgrid::XY},
     GameState, Message,
 };
 
@@ -35,6 +35,12 @@ impl WriteMessage for GameState {
         for entity in &self.entities {
             message.push(entity.encode());
         }
+
+        message.push(Message::Array(vec![
+            Message::Float32(self.map.width),
+            Message::Float32(self.map.height),
+        ]));
+
         Message::Array(message)
     }
 }

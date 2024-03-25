@@ -1,7 +1,5 @@
 use crate::{
-    draw::{draw_connecting, draw_disconnect, draw_entity, draw_grid},
-    entity::Entity,
-    ProtocolMessage,
+    draw::{draw_connecting, draw_disconnect, draw_entity, draw_grid}, entity::Entity, util::lerp, ProtocolMessage
 };
 use gloo_utils::window;
 use std::collections::HashMap;
@@ -12,12 +10,20 @@ use web_sys::{
 
 type Entities = HashMap<i32, Entity>;
 
+struct Map {
+    width: f32,
+    height: f32,
+    server_width: f32,
+    server_height: f32,
+}
+
 pub struct Game {
     pub index: Option<i32>,
     entities: Entities,
     ctx: CanvasRenderingContext2d,
     pub colors: HashMap<&'static str, &'static str>,
     pub disconnected: Option<String>,
+    map: Map,
 }
 
 impl Game {
@@ -26,8 +32,8 @@ impl Game {
             ("grey", "#808080"),
             ("blue", "#00B0E1"),
             ("red", "#C83737"),
-            ("bg", "#BFBFBF"),
-            ("grid", "#8F8F8F"),
+            ("bg", "#d4d4d4"),
+            ("grid", "#0000001a"),
         ]);
 
         Self {
@@ -36,6 +42,12 @@ impl Game {
             ctx,
             colors,
             disconnected: None,
+            map: Map {
+                width: 0.0,
+                height: 0.0,
+                server_width: 0.0,
+                server_height: 0.0,
+            },
         }
     }
 
@@ -43,6 +55,12 @@ impl Game {
         if let ProtocolMessage::Array(vec) = message {
             for msg in &vec {
                 if let ProtocolMessage::Array(v) = msg {
+                    if let [ProtocolMessage::Float32(map_width), ProtocolMessage::Float32(map_height)] =
+                        v.as_slice()
+                    {
+                        self.map.server_width = *map_width;
+                        self.map.server_height = *map_height;
+                    }
                     if let [ProtocolMessage::Int32(id), ProtocolMessage::Array(pos), ProtocolMessage::Float32(size)] =
                         v.as_slice()
                     {
@@ -50,10 +68,10 @@ impl Game {
                             pos.as_slice()
                         {
                             if self.entities.get(id).is_none() {
-                                self.entities.insert(*id, Entity::new(*id, *x, *y, *size));
+                                self.entities.insert(*id, Entity::new(*id, *x, *y, 0.0));
                             } else {
                                 self.entities.entry(*id).and_modify(|e| {
-                                    e.set_predict(*x, *y);
+                                    e.set_predict(*x, *y, *size);
                                 });
                             }
                         }
@@ -97,7 +115,7 @@ impl Game {
         let height = window().inner_height().unwrap().as_f64().unwrap();
 
         ctx.clear_rect(0.0, 0.0, width, height);
-        ctx.set_fill_style(&JsValue::from_str(self.colors.get("bg").unwrap()));
+        ctx.set_fill_style(&JsValue::from_str("#c9c9c9"));
         ctx.fill_rect(0.0, 0.0, width, height);
 
         if self.index.is_none() || self.entities.get(&self.index.unwrap_throw()).is_none() {
@@ -115,6 +133,17 @@ impl Game {
         let me = self.entities.get(&self.index.unwrap()).unwrap();
 
         ctx.save();
+
+        self.map.width = lerp(self.map.width, self.map.server_width);
+        self.map.height = lerp(self.map.height, self.map.server_height);
+
+        ctx.set_fill_style(&JsValue::from_str(self.colors.get("bg").unwrap()));
+        ctx.fill_rect(
+            width / 2.0 - me.pos.x as f64,
+            height / 2.0 - me.pos.y as f64,
+            self.map.width.into(),
+            self.map.height.into(),
+        );
 
         draw_grid(
             ctx,
