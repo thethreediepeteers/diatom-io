@@ -1,9 +1,7 @@
 use crate::{
-    game::entity::{Entity, XY},
-    GameInput, GameState, Message,
+    game::{entity::Entity, hashgrid::XY},
+    GameState, Message,
 };
-
-use std::collections::HashMap;
 
 pub trait WriteMessage {
     fn encode(&self) -> Message;
@@ -37,28 +35,12 @@ impl WriteMessage for GameState {
         for entity in &self.entities {
             message.push(entity.encode());
         }
+
+        message.push(Message::Array(vec![
+            Message::Float32(self.map.width),
+            Message::Float32(self.map.height),
+        ]));
+
         Message::Array(message)
     }
 }
-
-impl ReadMessage for GameInput {
-    fn from_vec(vec: Vec<Message>) -> Option<Self> {
-        if let [Message::Bool(w), Message::Bool(a), Message::Bool(s), Message::Bool(d)] =
-            vec.as_slice()
-        {
-            let mut input = Self {
-                keys: HashMap::new(),
-            };
-
-            input.keys.insert('w', *w);
-            input.keys.insert('a', *a);
-            input.keys.insert('s', *s);
-            input.keys.insert('d', *d);
-
-            Some(input)
-        } else {
-            None
-        }
-    }
-}
-

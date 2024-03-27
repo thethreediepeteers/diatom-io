@@ -1,5 +1,5 @@
 [package]
-name = "new_game_server"
+name = "diatom-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 futures-util = "0.3.30"
+rand = "0.8.5"
 tokio = { version = "1.36.0", features = ["full"] }
 tokio-tungstenite = "0.21.0"

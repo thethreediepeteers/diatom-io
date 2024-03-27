@@ -1,4 +1,4 @@
-use crate::{network::events::*, ReadMessage, Connection, Game, GameInput, Message, WriteMessage};
+use crate::{network::events::*, Connection, Game, Message, WriteMessage};
 use futures_util::{FutureExt, SinkExt, StreamExt};
 use std::{
     collections::HashMap,
@@ -32,8 +32,8 @@ pub fn run(sender: UnboundedSender<BroadcastEvent>, mut receiver: UnboundedRecei
                         game.remove_player(id);
                         let _ = sender.send(BroadcastEvent::Quit(id));
                     }
-                    GameEvent::Input(id, input) => {
-                        game.set_input(id, input);
+                    GameEvent::Input(id, key, value) => {
+                        game.set_input(id, key, value);
                     }
                 }
             }
@@ -96,8 +96,16 @@ pub async fn listen(
             if msg.is_binary() {
                 let decoded_message = Message::decode(&msg.into_data());
                 if let Message::Array(vec) = decoded_message {
-                    if let Some(input) = GameInput::from_vec(vec) {
-                        let _ = game_sender.send(GameEvent::Input(id, input));
+                    if let [Message::Uint8(upordown), Message::Uint8(key)] = vec.as_slice() {
+                        match upordown {
+                            0 => {
+                                let _ = game_sender.send(GameEvent::Input(id, *key, true));
+                            }
+                            1 => {
+                                let _ = game_sender.send(GameEvent::Input(id, *key, false));
+                            }
+                            _ => {}
+                        }
                     }
                 }
             } else if msg.is_close() {

@@ -28,6 +28,7 @@ pub fn draw_grid(ctx: &CanvasRenderingContext2d, x: f32, y: f32, cell_size: f32)
     ctx.close_path();
 
     ctx.set_line_width(2.5);
+    
     ctx.set_stroke_style(&JsValue::from_str(get_game().colors.get("grid").unwrap()));
 
     ctx.stroke();

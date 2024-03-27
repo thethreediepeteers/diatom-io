@@ -1,9 +1,9 @@
-use crate::{Connection, GameInput, GameState};
+use crate::{Connection, GameState};
 
 pub enum GameEvent {
     Join(Connection),
     Quit(i32),
-    Input(i32, GameInput),
+    Input(i32, u8, bool),
 }
 
 pub enum BroadcastEvent {
