@@ -7,53 +7,20 @@ mod util;
 
 extern crate console_error_panic_hook;
 
-use game::{get_game, new_game, GAME};
+use game::{get_game, new_game};
 use gloo_utils::{document, window};
-use listeners::add_event_listeners;
 use protocol::Message as ProtocolMessage;
 use std::panic;
 use web_sys::{
-    js_sys::Uint8Array,
     wasm_bindgen::{self, closure::Closure, prelude::*, JsCast},
-    BinaryType, CanvasRenderingContext2d, CloseEvent, HtmlCanvasElement, MessageEvent, WebSocket,
+    CanvasRenderingContext2d, Event, HtmlButtonElement, HtmlCanvasElement, HtmlDivElement,
 };
 
 #[wasm_bindgen(start)]
 fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    let addr = "ws://localhost:3000/";
-
-    let socket = WebSocket::new(addr).unwrap();
-
-    socket.set_binary_type(BinaryType::Arraybuffer);
-
-    socket.set_onmessage(Some(
-        Closure::<dyn FnMut(_)>::new(move |event: MessageEvent| {
-            let buf = event.data();
-            let array = Uint8Array::new(&buf);
-            let message = ProtocolMessage::decode(&array.to_vec());
-
-            get_game().handle_message(message);
-        })
-        .into_js_value()
-        .as_ref()
-        .unchecked_ref(),
-    ));
-
-    socket.set_onclose(Some(
-        Closure::<dyn FnMut(_)>::new(move |event: CloseEvent| {
-            unsafe {
-                if GAME.is_none() {
-                    return;
-                }
-            }
-            get_game().disconnected = Some(event.reason());
-        })
-        .into_js_value()
-        .as_ref()
-        .unchecked_ref(),
-    ));
+    let addr = "ws://0.0.0.0:3000/";
 
     let window = window();
 
@@ -75,9 +42,29 @@ fn main() {
         .dyn_into::<CanvasRenderingContext2d>()
         .unwrap();
 
-    add_event_listeners(socket);
+    let start_button = document
+        .get_element_by_id("start")
+        .unwrap_throw()
+        .dyn_into::<HtmlButtonElement>()
+        .unwrap_throw();
 
     new_game(ctx);
 
-    get_game().tick();
+    start_button.set_onclick(Some(
+        Closure::<dyn FnMut(_)>::new(move |_: Event| {
+            document
+                .get_element_by_id("startmenu")
+                .unwrap()
+                .dyn_into::<HtmlDivElement>()
+                .unwrap()
+                .style()
+                .set_property("display", "none")
+                .unwrap();
+            canvas.style().set_property("display", "flex").unwrap();
+            get_game().start(addr);
+        })
+        .into_js_value()
+        .as_ref()
+        .unchecked_ref(),
+    ));
 }

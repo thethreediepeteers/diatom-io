@@ -1,4 +1,4 @@
-use super::hashgrid::XY;
+use super::hashgrid::{Box, XY};
 use std::collections::HashMap;
 
 #[derive(Clone)]
@@ -40,5 +40,9 @@ impl Entity {
         } else if self.pos.y > height {
             self.vel.y -= (self.pos.y - height) / 10.0;
         }
+    }
+
+    pub fn get_bounding_box(&self) -> Box {
+        Box::new(self.id, self.pos.x, self.pos.y, self.size)
     }
 }

@@ -1,11 +1,16 @@
 use crate::{
-    draw::{draw_connecting, draw_disconnect, draw_entity, draw_grid}, entity::Entity, util::lerp, ProtocolMessage
+    draw::{draw_connecting, draw_disconnect, draw_entity, draw_grid},
+    entity::Entity,
+    listeners::add_event_listeners,
+    util::lerp,
+    ProtocolMessage,
 };
 use gloo_utils::window;
 use std::collections::HashMap;
 use web_sys::{
+    js_sys::Uint8Array,
     wasm_bindgen::{closure::Closure, prelude::*},
-    CanvasRenderingContext2d,
+    BinaryType, CanvasRenderingContext2d, CloseEvent, MessageEvent, WebSocket,
 };
 
 type Entities = HashMap<i32, Entity>;
@@ -96,6 +101,42 @@ impl Game {
         }
     }
 
+    pub fn start(&mut self, addr: &str) {
+        let socket = WebSocket::new(addr).unwrap();
+
+        socket.set_binary_type(BinaryType::Arraybuffer);
+
+        socket.set_onmessage(Some(
+            Closure::<dyn FnMut(_)>::new(move |event: MessageEvent| {
+                let buf = event.data();
+                let array = Uint8Array::new(&buf);
+                let message = ProtocolMessage::decode(&array.to_vec());
+
+                get_game().handle_message(message);
+            })
+            .into_js_value()
+            .as_ref()
+            .unchecked_ref(),
+        ));
+
+        socket.set_onclose(Some(
+            Closure::<dyn FnMut(_)>::new(move |event: CloseEvent| {
+                unsafe {
+                    if GAME.is_none() {
+                        return;
+                    }
+                }
+                get_game().disconnected = Some(event.reason());
+            })
+            .into_js_value()
+            .as_ref()
+            .unchecked_ref(),
+        ));
+
+        add_event_listeners(socket);
+        self.tick();
+    }
+
     pub fn tick(&mut self) {
         self.update();
 
@@ -103,6 +144,7 @@ impl Game {
             let game = get_game();
             game.tick();
         });
+
         window()
             .request_animation_frame(closure.as_ref().unchecked_ref())
             .unwrap_throw();
@@ -175,5 +217,5 @@ pub fn new_game(ctx: CanvasRenderingContext2d) {
 }
 
 pub fn get_game() -> &'static mut Game {
-    unsafe { GAME.as_mut().unwrap_throw() }
+    unsafe { GAME.as_mut().unwrap() }
 }

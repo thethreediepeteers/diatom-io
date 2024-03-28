@@ -2,7 +2,7 @@ use rand::random;
 
 use super::{
     entity::Entity,
-    hashgrid::{Box, HashGrid, XY},
+    hashgrid::{HashGrid, XY},
 };
 use std::collections::HashMap;
 
@@ -49,10 +49,16 @@ impl Game {
                 keys: HashMap::from([('w', false), ('a', false), ('s', false), ('d', false)]),
             },
         );
+
+        self.grid
+            .insert(self.players.get(&id).unwrap().get_bounding_box());
     }
 
     pub fn remove_player(&mut self, id: i32) {
-        self.players.remove(&id);
+        let entity = self.players.remove(&id);
+        if let Some(entity) = entity {
+            self.grid.remove(entity.get_bounding_box());
+        }
     }
 
     pub fn set_input(&mut self, id: i32, key: u8, value: bool) {
@@ -71,19 +77,19 @@ impl Game {
 
     pub fn update(&mut self) {
         for entity in self.players.values_mut() {
-            let mut bounding_box = Box::new(entity.id, entity.pos.x, entity.pos.y, entity.size);
+            let bounding_box = entity.get_bounding_box();
 
             self.grid.remove(bounding_box);
 
             entity.update_pos();
             entity.stay_in_bounds(self.map.width, self.map.height);
 
-            bounding_box = Box::new(entity.id, entity.pos.x, entity.pos.y, entity.size);
+            let bounding_box = entity.get_bounding_box();
 
             self.grid.insert(bounding_box);
 
             for other in self.grid.query(bounding_box) {
-                entity.vel.x -= (other.min.x +- entity.pos.x) * 0.01;
+                entity.vel.x -= (other.min.x + -entity.pos.x) * 0.01;
                 entity.vel.y -= (other.min.y - entity.pos.y) * 0.01;
             }
         }

@@ -1,0 +1,93 @@
+body {
+  margin: 0;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#startmenu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  background: #c9c9c9;
+}
+
+canvas {
+  display: none;
+}
+
+@font-face {
+  font-family: "Baloo Paaji 2";
+  src: url("./BalooPaaji2-Regular.ttf");
+}
+
+#icon {
+  width: 125px;
+}
+
+.title {
+  margin: 0;
+  color: white;
+  font-family: 'Baloo Paaji 2', sans-serif;
+  font-size: 40px;
+  -webkit-text-stroke: 6px black;
+  paint-order: stroke fill;
+  user-select: none;
+}
+
+.card,
+.row,
+.column {
+  display: flex;
+  gap: 4px;
+}
+
+.card {
+  width: 384px;
+  justify-content: center;
+  align-items: center;
+}
+
+.row {
+  flex-direction: row;
+}
+
+.column {
+  flex-direction: column;
+}
+
+.btn {
+  flex: 1 1 0%;
+  margin: 5px;
+  width: 180px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-family: "Baloo Paaji 2", sans-serif;
+  font-size: 25px;
+  user-select: none;
+}
+
+.image {
+  aspect-ratio: 1 / 1;
+  margin: 5px;
+  width: 45px;
+  height: 45px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-family: "Baloo Paaji 2", sans-serif;
+  font-size: 25px;
+  user-select: none;
+}
