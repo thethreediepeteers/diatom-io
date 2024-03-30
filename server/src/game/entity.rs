@@ -1,4 +1,5 @@
 use super::rect::Rectangle;
+use super::hashgrid::{Box, XY};
 use std::collections::HashMap;
 
 #[derive(Clone)]
@@ -35,5 +36,9 @@ impl Entity {
         }
 
         self.bounds = Rectangle::center_rect(x, y, size, size);
+    }
+
+    pub fn get_bounding_box(&self) -> Box {
+        Box::new(self.id, self.pos.x, self.pos.y, self.size)
     }
 }

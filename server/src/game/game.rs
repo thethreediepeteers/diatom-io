@@ -3,6 +3,7 @@ use rand::random;
 use super::{
     entity::Entity,
     rect::Rectangle,
+    hashgrid::{HashGrid, XY},
 };
 use std::collections::HashMap;
 
@@ -44,6 +45,7 @@ impl Game {
             size,
             size,
         );
+<<<<<<< HEAD
         let entity = Entity {
             id,
             bounds: bounds.clone(), 
@@ -57,6 +59,17 @@ impl Game {
     pub fn remove_player(&mut self, id: i32) {
         if let Some(entity) = self.players.remove(&id) {
             self.quadtree.remove(id);
+=======
+
+        self.grid
+            .insert(self.players.get(&id).unwrap().get_bounding_box());
+    }
+
+    pub fn remove_player(&mut self, id: i32) {
+        let entity = self.players.remove(&id);
+        if let Some(entity) = entity {
+            self.grid.remove(entity.get_bounding_box());
+>>>>>>> 8c831007672db8aa5a60cd9199773ca67f67b4b7
         }
     }
 
@@ -73,6 +86,7 @@ impl Game {
         }
     }
     pub fn update(&mut self) {
+<<<<<<< HEAD
         let mut players_temp = std::mem::take(&mut self.players);
     
         let player_bounds: Vec<(i32, Rectangle)> = players_temp.iter().map(|(&id, entity)| (id, entity.bounds.clone())).collect();
@@ -90,6 +104,23 @@ impl Game {
                     entity.vel.0 -= (x - ex) * 0.01;
                     entity.vel.1 -= (y - ey) * 0.01;
                 }
+=======
+        for entity in self.players.values_mut() {
+            let bounding_box = entity.get_bounding_box();
+
+            self.grid.remove(bounding_box);
+
+            entity.update_pos();
+            entity.stay_in_bounds(self.map.width, self.map.height);
+
+            let bounding_box = entity.get_bounding_box();
+
+            self.grid.insert(bounding_box);
+
+            for other in self.grid.query(bounding_box) {
+                entity.vel.x -= (other.min.x + -entity.pos.x) * 0.01;
+                entity.vel.y -= (other.min.y - entity.pos.y) * 0.01;
+>>>>>>> 8c831007672db8aa5a60cd9199773ca67f67b4b7
             }
         }
     

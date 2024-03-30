@@ -7,16 +7,15 @@ mod util;
 
 extern crate console_error_panic_hook;
 
-use game::{get_game, new_game, GAME};
+use game::{get_game, new_game};
 use gloo_utils::{document, window};
 use gloo_console::console_dbg;
 use listeners::add_event_listeners;
 use protocol::Message as ProtocolMessage;
 use std::panic;
 use web_sys::{
-    js_sys::Uint8Array,
     wasm_bindgen::{self, closure::Closure, prelude::*, JsCast},
-    BinaryType, CanvasRenderingContext2d, CloseEvent, HtmlCanvasElement, MessageEvent, WebSocket,
+    CanvasRenderingContext2d, Event, HtmlButtonElement, HtmlCanvasElement, HtmlDivElement,
 };
 
 #[wasm_bindgen(start)]
@@ -76,9 +75,29 @@ fn main() {
         .dyn_into::<CanvasRenderingContext2d>()
         .unwrap();
 
-    add_event_listeners(socket);
+    let start_button = document
+        .get_element_by_id("start")
+        .unwrap_throw()
+        .dyn_into::<HtmlButtonElement>()
+        .unwrap_throw();
 
     new_game(ctx);
 
-    get_game().tick();
+    start_button.set_onclick(Some(
+        Closure::<dyn FnMut(_)>::new(move |_: Event| {
+            document
+                .get_element_by_id("startmenu")
+                .unwrap()
+                .dyn_into::<HtmlDivElement>()
+                .unwrap()
+                .style()
+                .set_property("display", "none")
+                .unwrap();
+            canvas.style().set_property("display", "flex").unwrap();
+            get_game().start(addr);
+        })
+        .into_js_value()
+        .as_ref()
+        .unchecked_ref(),
+    ));
 }

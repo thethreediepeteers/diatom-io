@@ -2,8 +2,7 @@ use crate::ProtocolMessage;
 use gloo_events::{EventListener, EventListenerOptions};
 use gloo_utils::{document, window};
 use web_sys::{
-    wasm_bindgen::{prelude::*, JsCast},
-    Event, HtmlCanvasElement, KeyboardEvent, WebSocket,
+    wasm_bindgen::{prelude::*, JsCast}, Event, HtmlCanvasElement, KeyboardEvent, WebSocket
 };
 
 pub fn add_event_listeners(socket: WebSocket) {

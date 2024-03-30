@@ -1,5 +1,8 @@
 use core::ops::AddAssign;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    ops::{Add, Sub},
+};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct XY {
@@ -7,10 +10,30 @@ pub struct XY {
     pub y: f32,
 }
 
+impl Sub for XY {
+    type Output = XY;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
+}
+
+impl Add for XY {
+    type Output = XY;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
 impl AddAssign for XY {
-    fn add_assign(&mut self, other: Self) {
-        self.x += other.x;
-        self.y += other.y;
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
     }
 }
 
@@ -40,7 +63,6 @@ struct Cell {
 
 pub struct HashGrid {
     cells: HashMap<(i32, i32), Cell>,
-    cell_size: i32,
     cell_size_log2: i32,
 }
 
@@ -48,7 +70,6 @@ impl HashGrid {
     pub fn new(cell_size: i32) -> Self {
         Self {
             cells: HashMap::new(),
-            cell_size,
             cell_size_log2: cell_size.trailing_zeros() as i32,
         }
     }
@@ -103,12 +124,10 @@ impl HashGrid {
             for j in y1..=y2 {
                 if let Some(cell) = self.cells.get(&(i, j)) {
                     for obj in &cell.objects {
-                        if obj.min.x <= region.max.x
-                            && obj.max.x >= region.min.x
-                            && obj.min.y <= region.max.y
-                            && obj.max.y >= region.min.y
-                            && obj != &region
-                        {
+                        if obj.entity_index == region.entity_index {
+                            continue;
+                        }
+                        if Self::check_circle_collision(&region, obj) {
                             result.push(*obj);
                         }
                     }
@@ -117,5 +136,17 @@ impl HashGrid {
         }
 
         result
+    }
+
+    fn check_circle_collision(a: &Box, b: &Box) -> bool {
+        let x1 = (a.min.x + a.max.x) / 2.0;
+        let y1 = (a.min.y + a.max.y) / 2.0;
+
+        let x2 = (b.min.x + b.max.x) / 2.0;
+        let y2 = (b.min.y + b.max.y) / 2.0;
+
+        let distance = ((x1 - x2).powi(2) + (y1 - y2).powi(2)).sqrt();
+
+        distance <= (a.max.x - a.min.x) / 2.0 + (b.max.x - b.min.x) / 2.0
     }
 }

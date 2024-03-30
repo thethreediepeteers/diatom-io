@@ -27,4 +27,8 @@ features = [
   "Element",
   "CloseEvent",
   "HtmlCanvasElement",
+  "HtmlButtonElement",
+  "CssStyleDeclaration",
+  "HtmlDivElement",
+  "Performance"
 ]
