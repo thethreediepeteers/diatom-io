@@ -9,6 +9,7 @@ extern crate console_error_panic_hook;
 
 use game::{get_game, new_game, GAME};
 use gloo_utils::{document, window};
+use gloo_console::console_dbg;
 use listeners::add_event_listeners;
 use protocol::Message as ProtocolMessage;
 use std::panic;
@@ -33,7 +34,6 @@ fn main() {
             let buf = event.data();
             let array = Uint8Array::new(&buf);
             let message = ProtocolMessage::decode(&array.to_vec());
-
             get_game().handle_message(message);
         })
         .into_js_value()

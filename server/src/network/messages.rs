@@ -1,5 +1,5 @@
 use crate::{
-    game::{entity::Entity, hashgrid::XY},
+    game::{entity::Entity, rect::Rectangle},
     GameState, Message,
 };
 
@@ -13,9 +13,14 @@ pub trait ReadMessage {
         Self: Sized;
 }
 
-impl WriteMessage for XY {
+impl WriteMessage for Rectangle {
     fn encode(&self) -> Message {
-        Message::Array(vec![Message::Float32(self.x), Message::Float32(self.y)])
+        Message::Array(vec![
+            Message::Float64(self.min_x),
+            Message::Float64(self.min_y),
+            Message::Float64(self.max_x),
+            Message::Float64(self.max_y),
+        ])
     }
 }
 
@@ -23,8 +28,11 @@ impl WriteMessage for Entity {
     fn encode(&self) -> Message {
         Message::Array(vec![
             Message::Int32(self.id),
-            self.pos.encode(),
-            Message::Float32(self.size),
+            self.bounds.encode(),
+            Message::Array(vec![
+                Message::Float64(self.vel.0),
+                Message::Float64(self.vel.1),
+            ]),
         ])
     }
 }
@@ -35,12 +43,10 @@ impl WriteMessage for GameState {
         for entity in &self.entities {
             message.push(entity.encode());
         }
-
         message.push(Message::Array(vec![
-            Message::Float32(self.map.width),
-            Message::Float32(self.map.height),
+            Message::Float64(self.map.width),
+            Message::Float64(self.map.height),
         ]));
-
         Message::Array(message)
     }
 }
