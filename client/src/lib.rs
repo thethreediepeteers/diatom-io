@@ -34,6 +34,7 @@ fn main() {
             let buf = event.data();
             let array = Uint8Array::new(&buf);
             let message = ProtocolMessage::decode(&array.to_vec());
+            
             get_game().handle_message(message);
         })
         .into_js_value()
