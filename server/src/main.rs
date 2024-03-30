@@ -11,7 +11,7 @@ use tokio::{
 };
 use tokio_tungstenite::{accept_async, tungstenite::Message as SocketMessage, WebSocketStream};
 
-const PORT: u16 = 80;
+const PORT: u16 = 3000;
 
 #[tokio::main]
 async fn main() {
