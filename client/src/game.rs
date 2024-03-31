@@ -12,14 +12,15 @@ use web_sys::{
     wasm_bindgen::{closure::Closure, prelude::*},
     BinaryType, CanvasRenderingContext2d, CloseEvent, MessageEvent, WebSocket,
 };
+use gloo_console::console_dbg;
 
 type Entities = HashMap<i32, Entity>;
 
 struct Map {
-    width: f32,
-    height: f32,
-    server_width: f32,
-    server_height: f32,
+    width: f64,
+    height: f64,
+    server_width: f64,
+    server_height: f64,
 }
 
 pub struct Game {
@@ -60,23 +61,26 @@ impl Game {
         if let ProtocolMessage::Array(vec) = message {
             for msg in &vec {
                 if let ProtocolMessage::Array(v) = msg {
-                    if let [ProtocolMessage::Float32(map_width), ProtocolMessage::Float32(map_height)] =
+                    if let [ProtocolMessage::Float64(map_width), ProtocolMessage::Float64(map_height)] =
                         v.as_slice()
                     {
                         self.map.server_width = *map_width;
                         self.map.server_height = *map_height;
                     }
-                    if let [ProtocolMessage::Int32(id), ProtocolMessage::Array(pos), ProtocolMessage::Float32(size)] =
+                    if let [ProtocolMessage::Int32(id), ProtocolMessage::Array(bounds), ProtocolMessage::Array(vel)] =
                         v.as_slice()
                     {
-                        if let [ProtocolMessage::Float32(x), ProtocolMessage::Float32(y)] =
-                            pos.as_slice()
+                        if let [ProtocolMessage::Float64(min_x), ProtocolMessage::Float64(min_y), ProtocolMessage::Float64(max_x), ProtocolMessage::Float64(max_y)] =
+                            bounds.as_slice()
                         {
+                            let x = (min_x + max_x) / 2.0;
+                            let y = (min_y + max_y) / 2.0;
+
                             if self.entities.get(id).is_none() {
-                                self.entities.insert(*id, Entity::new(*id, *x, *y, 0.0));
+                                self.entities.insert(*id, Entity::new(*id, x, y, 0.0));
                             } else {
                                 self.entities.entry(*id).and_modify(|e| {
-                                    e.set_predict(*x, *y, *size);
+                                    e.set_predict(x, y, *max_x - *min_x);
                                 });
                             }
                         }
@@ -176,8 +180,8 @@ impl Game {
 
         ctx.save();
 
-        self.map.width = lerp(self.map.width, self.map.server_width);
-        self.map.height = lerp(self.map.height, self.map.server_height);
+        self.map.width = lerp(self.map.width as f64, self.map.server_width as f64);
+        self.map.height = lerp(self.map.height as f64, self.map.server_height as f64);
 
         ctx.set_fill_style(&JsValue::from_str(self.colors.get("bg").unwrap()));
         ctx.fill_rect(
@@ -189,8 +193,8 @@ impl Game {
 
         draw_grid(
             ctx,
-            (width / 2.0) as f32 + me.pos.x,
-            (height / 2.0) as f32 + me.pos.y,
+            ((width / 2.0) + me.pos.x) as f32,
+            ((height / 2.0) + me.pos.y) as f32,
             32.0,
         );
 

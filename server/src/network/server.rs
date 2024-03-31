@@ -50,6 +50,7 @@ pub fn run(sender: UnboundedSender<BroadcastEvent>, mut receiver: UnboundedRecei
 
         thread::sleep(Duration::from_millis(1000 / 60));
         dt = start_time.elapsed().as_secs_f32();
+        println!("MSPT (Milliseconds per tick): {:.3}", dt);
     }
 }
 

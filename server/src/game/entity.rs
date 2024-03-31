@@ -16,6 +16,23 @@ impl Entity {
         let (x, y) = self.bounds.get_center();
         let size = self.bounds.get_width();
         self.bounds = Rectangle::center_rect(x + vx, y + vy, size, size);
+
+        if self.keys[&'w'] {
+            self.vel.1 -= 1.0;
+        } else if self.keys[&'s'] {
+            self.vel.1 += 1.0;
+        }
+
+        if self.keys[&'a'] {
+            self.vel.0 -= 1.0;
+        } else if self.keys[&'d'] {
+            self.vel.0 += 1.0;
+        } 
+ 
+        self.vel.0 *= 0.8;
+        self.vel.1 *= 0.8;
+
+
     }
 
     pub fn stay_in_bounds(&mut self, width: f64, height: f64) {
@@ -36,9 +53,5 @@ impl Entity {
         }
 
         self.bounds = Rectangle::center_rect(x, y, size, size);
-    }
-
-    pub fn get_bounding_box(&self) -> Box {
-        Box::new(self.id, self.pos.x, self.pos.y, self.size)
     }
 }

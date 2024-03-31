@@ -9,8 +9,6 @@ extern crate console_error_panic_hook;
 
 use game::{get_game, new_game};
 use gloo_utils::{document, window};
-use gloo_console::console_dbg;
-use listeners::add_event_listeners;
 use protocol::Message as ProtocolMessage;
 use std::panic;
 use web_sys::{
@@ -22,38 +20,7 @@ use web_sys::{
 fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    let addr = "ws://localhost:3000/";
-
-    let socket = WebSocket::new(addr).unwrap();
-
-    socket.set_binary_type(BinaryType::Arraybuffer);
-
-    socket.set_onmessage(Some(
-        Closure::<dyn FnMut(_)>::new(move |event: MessageEvent| {
-            let buf = event.data();
-            let array = Uint8Array::new(&buf);
-            let message = ProtocolMessage::decode(&array.to_vec());
-            
-            get_game().handle_message(message);
-        })
-        .into_js_value()
-        .as_ref()
-        .unchecked_ref(),
-    ));
-
-    socket.set_onclose(Some(
-        Closure::<dyn FnMut(_)>::new(move |event: CloseEvent| {
-            unsafe {
-                if GAME.is_none() {
-                    return;
-                }
-            }
-            get_game().disconnected = Some(event.reason());
-        })
-        .into_js_value()
-        .as_ref()
-        .unchecked_ref(),
-    ));
+    let addr = "ws://0.0.0.0:3000/";
 
     let window = window();
 

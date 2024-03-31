@@ -45,7 +45,6 @@ impl Game {
             size,
             size,
         );
-<<<<<<< HEAD
         let entity = Entity {
             id,
             bounds: bounds.clone(), 
@@ -59,17 +58,6 @@ impl Game {
     pub fn remove_player(&mut self, id: i32) {
         if let Some(entity) = self.players.remove(&id) {
             self.quadtree.remove(id);
-=======
-
-        self.grid
-            .insert(self.players.get(&id).unwrap().get_bounding_box());
-    }
-
-    pub fn remove_player(&mut self, id: i32) {
-        let entity = self.players.remove(&id);
-        if let Some(entity) = entity {
-            self.grid.remove(entity.get_bounding_box());
->>>>>>> 8c831007672db8aa5a60cd9199773ca67f67b4b7
         }
     }
 
@@ -86,45 +74,38 @@ impl Game {
         }
     }
     pub fn update(&mut self) {
-<<<<<<< HEAD
         let mut players_temp = std::mem::take(&mut self.players);
     
-        let player_bounds: Vec<(i32, Rectangle)> = players_temp.iter().map(|(&id, entity)| (id, entity.bounds.clone())).collect();
-    
         for (id, entity) in players_temp.iter_mut() {
-            self.quadtree.remove(*id);
-            entity.update_pos();
-            entity.stay_in_bounds(self.map.width, self.map.height);
-            self.quadtree.insert(entity.bounds.clone(), *id);
-    
-            for (other_id, other_bounds) in &player_bounds {
-                if *id != *other_id {
-                    let (x, y) = other_bounds.get_center();
-                    let (ex, ey) = entity.bounds.get_center();
-                    entity.vel.0 -= (x - ex) * 0.01;
-                    entity.vel.1 -= (y - ey) * 0.01;
-                }
-=======
-        for entity in self.players.values_mut() {
-            let bounding_box = entity.get_bounding_box();
-
-            self.grid.remove(bounding_box);
-
             entity.update_pos();
             entity.stay_in_bounds(self.map.width, self.map.height);
 
-            let bounding_box = entity.get_bounding_box();
+            self.quadtree.search(&entity.bounds, |other_id| {
+                    if self.check_collision(*id, other_id) {
+                        println!("collision");
+                        let other_entity = self.players.get(&other_id);
+                        // log entity.bounds.get_center();
+                        // println!("{:?}", entity.bounds.get_center());
+                        if let Some(other_entity) = other_entity {
+                            let (x, y) = other_entity.bounds.get_center();
+                            let (ex, ey) = entity.bounds.get_center();
+                            entity.vel.0 -= (x - ex) * 0.01;
+                            entity.vel.1 -= (y - ey) * 0.01;
+                        }
+                    }
+                
+            });
 
-            self.grid.insert(bounding_box);
-
-            for other in self.grid.query(bounding_box) {
-                entity.vel.x -= (other.min.x + -entity.pos.x) * 0.01;
-                entity.vel.y -= (other.min.y - entity.pos.y) * 0.01;
->>>>>>> 8c831007672db8aa5a60cd9199773ca67f67b4b7
-            }
+            self.quadtree.update(entity.bounds.clone(), *id);
         }
-    
         self.players = players_temp;
+    }
+
+    fn check_collision(&self, entity_id: i32, candidate_id: i32) -> bool {
+        if entity_id == candidate_id {
+            return false;
+        }
+        true
     }
 
     pub fn get_state(&self) -> GameState {
