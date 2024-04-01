@@ -1,9 +1,6 @@
+use super::{entity::Entity, rect::Rectangle};
 use crate::game::up_search_quadtree::UpSearchQuadTree;
 use rand::random;
-use super::{
-    entity::Entity,
-    rect::Rectangle,
-};
 use std::collections::HashMap;
 
 #[derive(Copy, Clone)]
@@ -46,7 +43,7 @@ impl Game {
         );
         let entity = Entity {
             id,
-            bounds: bounds.clone(), 
+            bounds: bounds.clone(),
             vel: (0.0, 0.0),
             keys: HashMap::from([('w', false), ('a', false), ('s', false), ('d', false)]),
         };
@@ -73,34 +70,41 @@ impl Game {
         }
     }
     pub fn update(&mut self) {
-        let mut players_temp = std::mem::take(&mut self.players);
-    
-        for (id, entity) in players_temp.iter_mut() {
+        let players = &mut self.players;
+
+        for entity in players.values_mut() {
             entity.update_pos();
             entity.stay_in_bounds(self.map.width, self.map.height);
+        }
 
-            self.quadtree.search(&entity.bounds, |other_id| {
-                    if self.check_collision(*id, other_id) {
-                        println!("collision");
-                        let other_entity = self.players.get(&other_id);
-                        // log entity.bounds.get_center();
-                        // println!("{:?}", entity.bounds.get_center());
-                        if let Some(other_entity) = other_entity {
-                            let (x, y) = other_entity.bounds.get_center();
-                            let (ex, ey) = entity.bounds.get_center();
-                            entity.vel.0 -= (x - ex) * 0.01;
-                            entity.vel.1 -= (y - ey) * 0.01;
-                        }
-                    }
-                
+        let mut new_players: HashMap<i32, Entity> = HashMap::with_capacity(players.len());
+        new_players.clone_from(players);
+
+        for (id, entity) in new_players.iter_mut() {
+            let mut candidates: Vec<i32> = Vec::new();
+
+            self.quadtree.search(&entity.bounds, |id: i32| {
+                candidates.push(id);
             });
+
+            for candidate in candidates {
+                if Self::check_collision(*id, candidate) {
+                    println!("{} collided with {}", id, candidate);
+                    let other_entity = players.get_mut(&candidate);
+                    if let Some(other_entity) = other_entity {
+                        let (x, y) = other_entity.bounds.get_center();
+                        let (ex, ey) = entity.bounds.get_center();
+                        entity.vel.0 -= (x - ex) * 0.01;
+                        entity.vel.1 -= (y - ey) * 0.01;
+                    }
+                }
+            }
 
             self.quadtree.update(entity.bounds.clone(), *id);
         }
-        self.players = players_temp;
     }
 
-    fn check_collision(&self, entity_id: i32, candidate_id: i32) -> bool {
+    fn check_collision(entity_id: i32, candidate_id: i32) -> bool {
         if entity_id == candidate_id {
             return false;
         }

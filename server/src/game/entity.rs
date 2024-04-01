@@ -1,7 +1,7 @@
 use super::rect::Rectangle;
 use std::collections::HashMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Entity {
     pub id: i32,
     pub bounds: Rectangle,
@@ -30,8 +30,6 @@ impl Entity {
  
         self.vel.0 *= 0.8;
         self.vel.1 *= 0.8;
-
-
     }
 
     pub fn stay_in_bounds(&mut self, width: f64, height: f64) {
