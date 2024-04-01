@@ -1,19 +1,19 @@
 use crate::util::lerp;
 
 pub struct XY {
-    pub x: f32,
-    pub y: f32,
+    pub x: f64,
+    pub y: f64,
 }
 
 pub struct Entity {
     pub id: i32,
     pub pos: XY,
-    pub size: f32,
-    server_data: (f32, f32, f32),
+    pub size: f64,
+    server_data: (f64, f64, f64),
 }
 
 impl Entity {
-    pub fn new(id: i32, x: f32, y: f32, size: f32) -> Self {
+    pub fn new(id: i32, x: f64, y: f64, size: f64) -> Self {
         Self {
             id,
             pos: XY { x, y },
@@ -22,7 +22,7 @@ impl Entity {
         }
     }
 
-    pub fn set_predict(&mut self, x: f32, y: f32, size: f32) {
+    pub fn set_predict(&mut self, x: f64, y: f64, size: f64) {
         self.server_data = (x, y, size);
     }
 
