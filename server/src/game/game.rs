@@ -3,7 +3,6 @@ use rand::random;
 use super::{
     entity::Entity,
     rect::Rectangle,
-    hashgrid::{HashGrid, XY},
 };
 use std::collections::HashMap;
 
@@ -56,7 +55,7 @@ impl Game {
     }
 
     pub fn remove_player(&mut self, id: i32) {
-        if let Some(entity) = self.players.remove(&id) {
+        if let Some(_entity) = self.players.remove(&id) {
             self.quadtree.remove(id);
         }
     }

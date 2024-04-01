@@ -2,7 +2,8 @@ use crate::ProtocolMessage;
 use gloo_events::{EventListener, EventListenerOptions};
 use gloo_utils::{document, window};
 use web_sys::{
-    wasm_bindgen::{prelude::*, JsCast}, Event, HtmlCanvasElement, KeyboardEvent, WebSocket
+    wasm_bindgen::{prelude::*, JsCast},
+    Event, HtmlCanvasElement, KeyboardEvent, WebSocket,
 };
 
 pub fn add_event_listeners(socket: WebSocket) {
@@ -42,15 +43,13 @@ pub fn add_event_listeners(socket: WebSocket) {
         let event = event.clone().dyn_into::<KeyboardEvent>().unwrap_throw();
         let key = event.key();
 
-        let num: u8;
-
-        match key.as_str() {
-            "w" | "ArrowUp" => num = 0,
-            "a" | "ArrowLeft" => num = 1,
-            "s" | "ArrowDown" => num = 2,
-            "d" | "ArrowRight" => num = 3,
+        let num: u8 = match key.as_str() {
+            "w" | "ArrowUp" => 0,
+            "a" | "ArrowLeft" => 1,
+            "s" | "ArrowDown" => 2,
+            "d" | "ArrowRight" => 3,
             _ => return,
-        }
+        };
 
         cloned_socket
             .send_with_u8_array(

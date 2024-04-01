@@ -11,6 +11,7 @@ pub struct Rectangle {
     pub max_y: f64,
 }
 
+#[allow(dead_code)]
 impl Rectangle {
     #[inline]
     pub const fn new(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> Rectangle {

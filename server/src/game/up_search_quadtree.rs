@@ -27,6 +27,7 @@ pub struct UpSearchQuadTree<T: Copy + Eq + Hash, const MAX_LEVEL: u8> {
     items: HashMap<T, Coord>,
 }
 
+#[allow(dead_code)]
 impl<T: Copy + Eq + Hash, const MAX_LEVEL: u8> UpSearchQuadTree<T, MAX_LEVEL> {
     /// Create a new quadtree with the given bounds.
     ///

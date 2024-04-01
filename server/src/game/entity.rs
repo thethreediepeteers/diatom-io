@@ -1,5 +1,4 @@
 use super::rect::Rectangle;
-use super::hashgrid::{Box, XY};
 use std::collections::HashMap;
 
 #[derive(Clone)]
