@@ -6,11 +6,10 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::{
-    net::TcpStream,
     sync::mpsc::{UnboundedReceiver, UnboundedSender},
     task::unconstrained,
 };
-use tokio_tungstenite::{tungstenite::Message as SocketMessage, WebSocketStream};
+use warp::filters::ws::{Message as SocketMessage, WebSocket};
 
 pub fn run(sender: UnboundedSender<BroadcastEvent>, mut receiver: UnboundedReceiver<GameEvent>) {
     let mut game = Game::new();
@@ -50,7 +49,7 @@ pub fn run(sender: UnboundedSender<BroadcastEvent>, mut receiver: UnboundedRecei
 
         thread::sleep(Duration::from_millis(1000 / 60));
         dt = start_time.elapsed().as_secs_f32();
-        println!("MSPT (Milliseconds per tick): {:.3}", dt);
+        //println!("MSPT (Milliseconds per tick): {:.3}", dt);
     }
 }
 
@@ -71,31 +70,31 @@ pub async fn broadcast(mut receiver: UnboundedReceiver<BroadcastEvent>) {
             BroadcastEvent::SendState(state) => {
                 for conn in connections.values_mut() {
                     let data = state.encode();
-                    let _ = conn.sender.send(SocketMessage::Binary(data.encode())).await;
+                    let _ = conn.sender.send(SocketMessage::binary(data.encode())).await;
                 }
             }
         }
     }
 }
 
-pub async fn listen(
-    game_sender: UnboundedSender<GameEvent>,
-    ws_stream: WebSocketStream<TcpStream>,
-    id: i32,
-) {
-    let (mut ws_sender, mut ws_receiver) = ws_stream.split();
-    ws_sender
-        .send(SocketMessage::Binary(Message::Int32(id).encode()))
+pub async fn listen(game_sender: UnboundedSender<GameEvent>, ws_stream: WebSocket) {
+    let (ws_sender, mut ws_receiver) = ws_stream.split();
+
+    let mut connection = Connection::new(ws_sender);
+    let id = connection.id;
+    println!("Client {} connected", id);
+    connection
+        .sender
+        .send(SocketMessage::binary(Message::Int32(id).encode()))
         .await
         .unwrap();
 
-    let connection = Connection::new(id, ws_sender);
     let _ = game_sender.send(GameEvent::Join(connection));
 
     while let Some(msg) = ws_receiver.next().await {
         if let Ok(msg) = msg {
             if msg.is_binary() {
-                let decoded_message = Message::decode(&msg.into_data());
+                let decoded_message = Message::decode(&msg.into_bytes());
                 if let Message::Array(vec) = decoded_message {
                     if let [Message::Uint8(upordown), Message::Uint8(key)] = vec.as_slice() {
                         match upordown {

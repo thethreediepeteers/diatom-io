@@ -11,6 +11,7 @@ use game::{get_game, new_game};
 use gloo_utils::{document, window};
 use protocol::Message as ProtocolMessage;
 use std::panic;
+use wasm_bindgen_futures::spawn_local;
 use web_sys::{
     wasm_bindgen::{self, closure::Closure, prelude::*, JsCast},
     CanvasRenderingContext2d, Event, HtmlButtonElement, HtmlCanvasElement, HtmlDivElement,
@@ -20,7 +21,7 @@ use web_sys::{
 fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    let addr = "ws://0.0.0.0:3000/";
+    let addr = "ws://0.0.0.0:3000/ws";
 
     let window = window();
 
@@ -49,7 +50,7 @@ fn main() {
         .unwrap_throw();
 
     new_game(ctx);
-
+    
     start_button.set_onclick(Some(
         Closure::<dyn FnMut(_)>::new(move |_: Event| {
             document
@@ -61,7 +62,9 @@ fn main() {
                 .set_property("display", "none")
                 .unwrap();
             canvas.style().set_property("display", "flex").unwrap();
-            get_game().start(addr);
+            spawn_local(async {
+                get_game().start(addr).await;
+            });
         })
         .into_js_value()
         .as_ref()

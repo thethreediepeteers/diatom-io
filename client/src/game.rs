@@ -7,6 +7,7 @@ use crate::{
 };
 use gloo_console::console_dbg;
 use gloo_utils::window;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use web_sys::{
     js_sys::Uint8Array,
@@ -30,6 +31,7 @@ pub struct Game {
     pub colors: HashMap<&'static str, &'static str>,
     pub disconnected: Option<String>,
     map: Map,
+    mockups: Value,
 }
 
 impl Game {
@@ -54,6 +56,7 @@ impl Game {
                 server_width: 0.0,
                 server_height: 0.0,
             },
+            mockups: Value::Null,
         }
     }
 
@@ -108,7 +111,7 @@ impl Game {
         }
     }
 
-    pub fn start(&mut self, addr: &str) {
+    pub async fn start(&mut self, addr: &str) {
         let socket = WebSocket::new(addr).unwrap();
 
         socket.set_binary_type(BinaryType::Arraybuffer);
@@ -141,6 +144,12 @@ impl Game {
         ));
 
         add_event_listeners(socket);
+
+        if let Err(e) = self.get_mockups().await {
+            console_dbg!(format!("Failed to get mockups: {:?}", e));
+        };
+
+        console_dbg!(format!("mockups: {:?}", self.mockups["test"]));
         self.tick();
     }
 
@@ -211,6 +220,13 @@ impl Game {
         }
 
         ctx.restore();
+    }
+
+    async fn get_mockups(&mut self) -> Result<(), reqwest::Error> {
+        let addr = format!("http://localhost:3000/mockups.json");
+
+        self.mockups = serde_json::from_str(reqwest::get(addr).await?.text().await?.trim()).unwrap();
+        Ok(())
     }
 }
 

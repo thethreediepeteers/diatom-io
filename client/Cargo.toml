@@ -13,6 +13,9 @@ console_error_panic_hook = "0.1.7"
 gloo-console = "0.3.0"
 gloo-events = "0.2.0"
 gloo-utils = "0.2.0"
+reqwest = "0.12.2"
+serde_json = "1.0.115"
+wasm-bindgen-futures = "0.4.42"
 
 [dependencies.web-sys]
 version = "0.3.68"
@@ -30,5 +33,6 @@ features = [
   "HtmlButtonElement",
   "CssStyleDeclaration",
   "HtmlDivElement",
-  "Performance"
+  "Performance",
+  "Location"
 ]
