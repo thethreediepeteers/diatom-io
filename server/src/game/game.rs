@@ -97,14 +97,8 @@ impl Game {
                     let (x, y) = other_entity.bounds.get_center();
                     let (ex, ey) = entity.bounds.get_center();
 
-                    let dx = x - ex;
-                    let dy = y - ey;
-                    let dist = (dx * dx + dy * dy).sqrt();
-                    let diff = entity.bounds.get_width() + other_entity.bounds.get_width() - dist;
-                    if diff > 0.0 {
-                        entity.vel.0 -= dx;
-                        entity.vel.1 -= dy;
-                    }
+                    entity.vel.0 -= (x - ex) / 100.0;
+                    entity.vel.1 -= (y - ey) / 100.0;
                 }
             }
 
@@ -118,7 +112,7 @@ impl Game {
             map: self.map,
         };
         for entity in self.players.values() {
-            state.entities.push(entity.clone()); 
+            state.entities.push(entity.clone());
         }
         state
     }
