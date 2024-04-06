@@ -78,9 +78,9 @@ impl Game {
         }
 
         let mut new_players: HashMap<i32, Entity> = HashMap::with_capacity(players.len());
-        new_players.clone_from(players);
+        new_players.clone_from(&players);
 
-        for (id, entity) in new_players.iter_mut() {
+        for (id, entity) in players.iter_mut() {
             let mut candidates: Vec<i32> = Vec::new();
 
             self.quadtree.search(&entity.bounds, |id: i32| {
@@ -88,27 +88,28 @@ impl Game {
             });
 
             for candidate in candidates {
-                if Self::check_collision(*id, candidate) {
-                    println!("{} collided with {}", id, candidate);
-                    let other_entity = players.get_mut(&candidate);
-                    if let Some(other_entity) = other_entity {
-                        let (x, y) = other_entity.bounds.get_center();
-                        let (ex, ey) = entity.bounds.get_center();
-                        entity.vel.0 -= (x - ex) * 0.01;
-                        entity.vel.1 -= (y - ey) * 0.01;
+                if *id == candidate {
+                    continue;
+                }
+
+                let other_entity = new_players.get_mut(&candidate);
+                if let Some(other_entity) = other_entity {
+                    let (x, y) = other_entity.bounds.get_center();
+                    let (ex, ey) = entity.bounds.get_center();
+
+                    let dx = x - ex;
+                    let dy = y - ey;
+                    let dist = (dx * dx + dy * dy).sqrt();
+                    let diff = entity.bounds.get_width() + other_entity.bounds.get_width() - dist;
+                    if diff > 0.0 {
+                        entity.vel.0 -= dx;
+                        entity.vel.1 -= dy;
                     }
                 }
             }
 
-            self.quadtree.update(entity.bounds.clone(), *id);
+            self.quadtree.update(entity.bounds, *id);
         }
-    }
-
-    fn check_collision(entity_id: i32, candidate_id: i32) -> bool {
-        if entity_id == candidate_id {
-            return false;
-        }
-        true
     }
 
     pub fn get_state(&self) -> GameState {
@@ -117,7 +118,7 @@ impl Game {
             map: self.map,
         };
         for entity in self.players.values() {
-            state.entities.push(entity.clone());
+            state.entities.push(entity.clone()); 
         }
         state
     }

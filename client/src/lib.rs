@@ -21,7 +21,7 @@ use web_sys::{
 fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    let addr = "ws://0.0.0.0:3000/ws";
+    let addr = "ws://localhost:3000/ws";
 
     let window = window();
 

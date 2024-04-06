@@ -1,6 +1,6 @@
 use rand::Rng;
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Rectangle {
     // Top left corner
     pub min_x: f64,
