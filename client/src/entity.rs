@@ -27,8 +27,8 @@ impl Entity {
     }
 
     pub fn predict(&mut self) {
-        self.pos.x = lerp(self.pos.x, self.server_data.0);
-        self.pos.y = lerp(self.pos.y, self.server_data.1);
-        self.size = lerp(self.size, self.server_data.2);
+        self.pos.x = lerp(self.pos.x, self.server_data.0, 0.05);
+        self.pos.y = lerp(self.pos.y, self.server_data.1, 0.05);
+        self.size = lerp(self.size, self.server_data.2, 0.1);
     }
 }

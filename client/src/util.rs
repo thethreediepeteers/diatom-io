@@ -10,6 +10,6 @@ pub fn offset_hex(hex_color: &str, offset: u8) -> String {
     format!("#{:02X}{:02X}{:02X}", r, g, b)
 }
 
-pub fn lerp(a: f64, b: f64) -> f64 {
-    a + (b - a) / 5.0
+pub fn lerp(a: f64, b: f64, c: f64) -> f64 {
+    a + (b - a) * c
 }

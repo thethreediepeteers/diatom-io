@@ -192,8 +192,8 @@ impl Game {
 
         ctx.save();
 
-        self.map.width = lerp(self.map.width, self.map.server_width);
-        self.map.height = lerp(self.map.height, self.map.server_height);
+        self.map.width = lerp(self.map.width, self.map.server_width, 0.1);
+        self.map.height = lerp(self.map.height, self.map.server_height, 0.1);
 
         ctx.set_fill_style(&JsValue::from_str(self.colors.get("bg").unwrap()));
         ctx.fill_rect(

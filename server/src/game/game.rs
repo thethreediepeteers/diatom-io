@@ -70,17 +70,17 @@ impl Game {
         }
     }
     pub fn update(&mut self) {
-        let players = &mut self.players;
+        let mut players_immut = HashMap::new();
+        players_immut.clone_from(&self.players);
 
-        for entity in players.values_mut() {
+        let ids = self.players.keys().cloned().collect::<Vec<i32>>();
+
+        for id in ids {
+            let entity = self.players.get_mut(&id).unwrap();
+
             entity.update_pos();
             entity.stay_in_bounds(self.map.width, self.map.height);
-        }
 
-        let mut new_players: HashMap<i32, Entity> = HashMap::with_capacity(players.len());
-        new_players.clone_from(&players);
-
-        for (id, entity) in players.iter_mut() {
             let mut candidates: Vec<i32> = Vec::new();
 
             self.quadtree.search(&entity.bounds, |id: i32| {
@@ -88,11 +88,11 @@ impl Game {
             });
 
             for candidate in candidates {
-                if *id == candidate {
+                if id == candidate {
                     continue;
                 }
 
-                let other_entity = new_players.get_mut(&candidate);
+                let other_entity = players_immut.get_mut(&candidate);
                 if let Some(other_entity) = other_entity {
                     let (x, y) = other_entity.bounds.get_center();
                     let (ex, ey) = entity.bounds.get_center();
@@ -102,7 +102,7 @@ impl Game {
                 }
             }
 
-            self.quadtree.update(entity.bounds, *id);
+            self.quadtree.update(entity.bounds, id);
         }
     }
 

@@ -47,7 +47,7 @@ pub fn run(sender: UnboundedSender<BroadcastEvent>, mut receiver: UnboundedRecei
             let _ = sender.send(BroadcastEvent::SendState(game.get_state()));
         }
 
-        thread::sleep(Duration::from_millis(1000 / 60));
+        thread::sleep(Duration::from_millis(1000 / 30));
         dt = start_time.elapsed().as_secs_f32();
         //println!("MSPT (Milliseconds per tick): {:.3}", dt);
     }

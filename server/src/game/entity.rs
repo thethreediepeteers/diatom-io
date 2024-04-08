@@ -26,8 +26,8 @@ impl Entity {
             self.vel.0 -= 1.0;
         } else if self.keys[&'d'] {
             self.vel.0 += 1.0;
-        } 
- 
+        }
+
         self.vel.0 *= 0.8;
         self.vel.1 *= 0.8;
     }
