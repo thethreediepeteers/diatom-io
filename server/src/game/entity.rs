@@ -4,9 +4,11 @@ use std::collections::HashMap;
 #[derive(Clone, Debug)]
 pub struct Entity {
     pub id: i32,
+    pub mockup_id: i32,
     pub bounds: Rectangle,
     pub vel: (f64, f64),
     pub keys: HashMap<char, bool>,
+    pub angle: f64,
 }
 
 impl Entity {

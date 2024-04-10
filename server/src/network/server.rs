@@ -31,9 +31,14 @@ pub fn run(sender: UnboundedSender<BroadcastEvent>, mut receiver: UnboundedRecei
                         game.remove_player(id);
                         let _ = sender.send(BroadcastEvent::Quit(id));
                     }
-                    GameEvent::Input(id, key, value) => {
-                        game.set_input(id, key, value);
-                    }
+                    GameEvent::Input(id, input) => match input {
+                        Input::Keys(key, value) => {
+                            game.set_input(id, key, value);
+                        }
+                        Input::Mouse(rad) => {
+                            game.set_mouse(id, rad);
+                        }
+                    },
                 }
             }
         }
@@ -96,16 +101,22 @@ pub async fn listen(game_sender: UnboundedSender<GameEvent>, ws_stream: WebSocke
             if msg.is_binary() {
                 let decoded_message = Message::decode(&msg.into_bytes());
                 if let Message::Array(vec) = decoded_message {
-                    if let [Message::Uint8(upordown), Message::Uint8(key)] = vec.as_slice() {
-                        match upordown {
+                    match vec.as_slice() {
+                        [Message::Uint8(upordown), Message::Uint8(key)] => match upordown {
                             0 => {
-                                let _ = game_sender.send(GameEvent::Input(id, *key, true));
+                                let _ =
+                                    game_sender.send(GameEvent::Input(id, Input::Keys(*key, true)));
                             }
                             1 => {
-                                let _ = game_sender.send(GameEvent::Input(id, *key, false));
+                                let _ = game_sender
+                                    .send(GameEvent::Input(id, Input::Keys(*key, false)));
                             }
                             _ => {}
+                        },
+                        [Message::Float64(rad)] => {
+                            let _ = game_sender.send(GameEvent::Input(id, Input::Mouse(*rad)));
                         }
+                        _ => {}
                     }
                 }
             } else if msg.is_close() {

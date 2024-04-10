@@ -2,9 +2,11 @@ mod game;
 mod network;
 
 use futures_util::stream::SplitSink;
-use game::game::{Game, GameState};
+use game::{
+    definitions::generate_mockups,
+    game::{Game, GameState},
+};
 use network::{events::*, messages::*, protocol::Message, server::*};
-use serde_json::{json, Value};
 use std::{
     net::{Ipv4Addr, SocketAddrV4},
     thread,
@@ -16,14 +18,12 @@ use warp::{
 };
 
 const PORT: u16 = 3000;
-static mut MOCKUPS: Value = Value::Null;
 static mut CLIENT_COUNTER: i32 = 0;
 
 #[tokio::main]
 async fn main() {
-    unsafe {
-        MOCKUPS = json!({"test": "lkjfaslkjfd"});
-    }
+    let mockups = generate_mockups();
+
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), PORT);
 
     let (broadcast_sender, broadcast_receiver) = unbounded_channel::<BroadcastEvent>();
@@ -43,7 +43,7 @@ async fn main() {
             })
         })
         .or(warp::path("mockups.json")
-            .map(|| unsafe { warp::reply::json(&MOCKUPS) })
+            .map(move || warp::reply::json(&mockups))
             .with(warp::cors().allow_any_origin()));
 
     warp::serve(routes).run(addr).await;

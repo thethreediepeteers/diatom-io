@@ -7,7 +7,7 @@ use crate::{
 };
 use gloo_console::console_dbg;
 use gloo_utils::window;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::HashMap;
 use web_sys::{
     js_sys::Uint8Array,
@@ -31,7 +31,7 @@ pub struct Game {
     pub colors: HashMap<&'static str, &'static str>,
     pub disconnected: Option<String>,
     map: Map,
-    mockups: Value,
+    pub mockups: Value,
 }
 
 impl Game {
@@ -71,7 +71,7 @@ impl Game {
                             self.map.server_width = *w;
                             self.map.server_height = *h;
                         }
-                        [ProtocolMessage::Int32(id), ProtocolMessage::Array(bounds), ProtocolMessage::Array(_vel)] =>
+                        [ProtocolMessage::Int32(id), ProtocolMessage::Int32(mockup_id), ProtocolMessage::Float64(angle), ProtocolMessage::Array(bounds)] =>
                         // entity update
                         {
                             if let [ProtocolMessage::Float64(min_x), ProtocolMessage::Float64(min_y), ProtocolMessage::Float64(max_x), ProtocolMessage::Float64(max_y)] =
@@ -80,19 +80,18 @@ impl Game {
                                 let x = (min_x + max_x) / 2.0;
                                 let y = (min_y + max_y) / 2.0;
 
-                                if self.entities.get(id).is_none() {
-                                    self.entities.insert(*id, Entity::new(*id, x, y, 0.0));
-                                } else {
-                                    self.entities.entry(*id).and_modify(|e| {
-                                        e.set_predict(x, y, *max_x - *min_x);
-                                    });
-                                }
+                                self.entities
+                                    .entry(*id)
+                                    .and_modify(|e| {
+                                        e.set_predict(x, y, *max_x - *min_x, *angle);
+                                    })
+                                    .or_insert(Entity::new(*id, x, y, 0.0, *mockup_id));
                             }
 
                             self.entities.retain(|id, _| {
                                 vec.iter().any(|m| match m {
-                                    ProtocolMessage::Array(v) if v.len() == 3 => {
-                                        if let [ProtocolMessage::Int32(i), _, _] = v.as_slice() {
+                                    ProtocolMessage::Array(v) if v.len() == 4 => {
+                                        if let [ProtocolMessage::Int32(i), _, _, _] = v.as_slice() {
                                             i == id
                                         } else {
                                             false
@@ -102,7 +101,9 @@ impl Game {
                                 })
                             });
                         }
-                        _ => {}
+                        _ => {
+                            console_dbg!(v);
+                        }
                     };
                 }
             }
@@ -149,7 +150,10 @@ impl Game {
             console_dbg!(format!("Failed to get mockups: {:?}", e));
         };
 
-        console_dbg!(format!("mockups: {:?}", self.mockups["test"]));
+        console_dbg!(format!(
+            "mockups: {:?}",
+            self.mockups.as_array().unwrap()[0].as_object().unwrap()
+        ));
         self.tick();
     }
 
@@ -178,7 +182,6 @@ impl Game {
 
         if self.index.is_none() || self.entities.get(&self.index.unwrap_throw()).is_none() {
             draw_connecting(ctx);
-
             return;
         }
 
@@ -225,7 +228,8 @@ impl Game {
     async fn get_mockups(&mut self) -> Result<(), reqwest::Error> {
         let addr = format!("http://localhost:3000/mockups.json");
 
-        self.mockups = serde_json::from_str(reqwest::get(addr).await?.text().await?.trim()).unwrap();
+        self.mockups =
+            serde_json::from_str(reqwest::get(addr).await?.text().await?.trim()).unwrap();
         Ok(())
     }
 }

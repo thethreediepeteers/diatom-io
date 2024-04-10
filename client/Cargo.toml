@@ -22,6 +22,7 @@ version = "0.3.68"
 features = [
   "BinaryType",
   "MessageEvent",
+  "MouseEvent",
   "KeyboardEvent",
   "WebSocket",
   "Window",

@@ -43,9 +43,11 @@ impl Game {
         );
         let entity = Entity {
             id,
+            mockup_id: 0,
             bounds: bounds.clone(),
             vel: (0.0, 0.0),
             keys: HashMap::from([('w', false), ('a', false), ('s', false), ('d', false)]),
+            angle: 0.0,
         };
         self.players.insert(id, entity);
         self.quadtree.insert(bounds, id);
@@ -69,6 +71,13 @@ impl Game {
             entity.keys.insert(char, value);
         }
     }
+
+    pub fn set_mouse(&mut self, id: i32, rad: f64) {
+        if let Some(entity) = self.players.get_mut(&id) {
+            entity.angle = rad;
+        }
+    }
+
     pub fn update(&mut self) {
         let mut players_immut = HashMap::new();
         players_immut.clone_from(&self.players);

@@ -28,11 +28,9 @@ impl WriteMessage for Entity {
     fn encode(&self) -> Message {
         Message::Array(vec![
             Message::Int32(self.id),
+            Message::Int32(self.mockup_id),
+            Message::Float64(self.angle),
             self.bounds.encode(),
-            Message::Array(vec![
-                Message::Float64(self.vel.0),
-                Message::Float64(self.vel.1),
-            ]),
         ])
     }
 }
