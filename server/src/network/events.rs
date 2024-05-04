@@ -2,8 +2,8 @@ use crate::{Connection, GameState};
 
 pub enum GameEvent {
     Join(Connection),
-    Quit(i32),
-    Input(i32, Input),
+    Quit(u16),
+    Input(u16, Input),
 }
 
 pub enum Input {
@@ -13,6 +13,6 @@ pub enum Input {
 
 pub enum BroadcastEvent {
     Join(Connection),
-    Quit(i32),
+    Quit(u16),
     SendState(GameState),
 }

@@ -1,14 +1,14 @@
-use super::rect::Rectangle;
+use super::{game::Game, rect::Rectangle};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct Entity {
-    pub id: i32,
-    pub mockup_id: i32,
+    pub id: u16,
+    pub mockup_id: u16,
     pub bounds: Rectangle,
     pub vel: (f64, f64),
     pub keys: HashMap<char, bool>,
-    pub angle: f64,
+    pub angle: f64
 }
 
 impl Entity {
@@ -52,5 +52,10 @@ impl Entity {
         }
 
         self.bounds = Rectangle::center_rect(x, y, size, size);
+    }
+
+    #[allow(dead_code)]
+    pub fn kill(&mut self, game: &mut Game) {
+        game.remove_player(self.id);
     }
 }

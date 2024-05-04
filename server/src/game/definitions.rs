@@ -1,8 +1,9 @@
 use serde_json::{json, Value};
 
 enum Definition {
+    #[allow(dead_code)]
     Building(Building),
-    Unit(Unit),
+    Unit(Unit)
 }
 
 struct Building {
@@ -10,7 +11,7 @@ struct Building {
     body: Body,
     color: String,
     size: u8,
-    guns: Vec<Gun>,
+    guns: Vec<Gun>
 }
 
 struct Unit {
@@ -20,11 +21,11 @@ struct Unit {
     shape: u8,
     width: f64,
     height: f64,
-    guns: Vec<Gun>,
+    guns: Vec<Gun>
 }
 
 struct Body {
-    health: u8,
+    health: u8
 }
 
 struct Gun {
@@ -35,30 +36,34 @@ struct Gun {
     width: f64,
     height: f64,
     angle: f64,
-    aspect: f64,
+    aspect: f64
 }
 
 fn create_defs() -> Vec<Definition> {
     let mut definitions = Vec::new();
+    let gray = "#808080".to_string();
+    let time = std::time::Instant::now();
 
     definitions.push(Definition::Unit(Unit {
         label: "Aggressor".to_string(),
         body: Body { health: 100 },
-        color: "#00B0E1".to_string(),
+        color: "#00B0E1".to_string(), //?
         shape: 0,
         width: 65.0,
         height: 65.0,
         guns: vec![Gun {
-            color: "#808080".to_string(),
-            shape: 4,
-            x: -10.0,
+            color: gray,
+            shape: 4, // not used
+            x: 0.0,
             y: 0.0,
             width: 40.0,
             height: 42.5,
             angle: 0.0,
-            aspect: 1.0,
-        }],
+            aspect: 1.0
+        }]
     }));
+
+    println!("Mockups loaded in {:?}", time.elapsed());
 
     definitions
 }

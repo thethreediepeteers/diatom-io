@@ -24,13 +24,17 @@ impl WriteMessage for Rectangle {
     }
 }
 
+fn encode_angle(angle: f64) -> i16 {
+    ((angle % i16::MAX as f64) / 360. * i16::MAX as f64).round() as i16
+}
+
 impl WriteMessage for Entity {
     fn encode(&self) -> Message {
         Message::Array(vec![
-            Message::Int32(self.id),
-            Message::Int32(self.mockup_id),
-            Message::Float64(self.angle),
-            self.bounds.encode(),
+            Message::Uint16(self.id),
+            Message::Uint16(self.mockup_id),
+            Message::Int16(encode_angle(self.angle)),
+            self.bounds.encode()
         ])
     }
 }

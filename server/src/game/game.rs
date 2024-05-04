@@ -11,13 +11,13 @@ pub struct Map {
 
 pub struct GameState {
     pub entities: Vec<Entity>,
-    pub map: Map,
+    pub map: Map
 }
 
 pub struct Game {
-    players: HashMap<i32, Entity>,
+    players: HashMap<u16, Entity>,
     pub map: Map,
-    quadtree: UpSearchQuadTree<i32, 8>,
+    quadtree: UpSearchQuadTree<u16, 8>
 }
 
 impl Game {
@@ -29,11 +29,11 @@ impl Game {
         Self {
             players: HashMap::new(),
             map,
-            quadtree: UpSearchQuadTree::new(Rectangle::new(0.0, 0.0, map.width, map.height)),
+            quadtree: UpSearchQuadTree::new(Rectangle::new(0.0, 0.0, map.width, map.height))
         }
     }
 
-    pub fn add_player(&mut self, id: i32) {
+    pub fn add_player(&mut self, id: u16) {
         let size = 65.0;
         let bounds = Rectangle::center_rect(
             random::<f64>() * self.map.width,
@@ -47,19 +47,19 @@ impl Game {
             bounds: bounds.clone(),
             vel: (0.0, 0.0),
             keys: HashMap::from([('w', false), ('a', false), ('s', false), ('d', false)]),
-            angle: 0.0,
+            angle: 0.0
         };
         self.players.insert(id, entity);
         self.quadtree.insert(bounds, id);
     }
 
-    pub fn remove_player(&mut self, id: i32) {
+    pub fn remove_player(&mut self, id: u16) {
         if let Some(_entity) = self.players.remove(&id) {
             self.quadtree.remove(id);
         }
     }
 
-    pub fn set_input(&mut self, id: i32, key: u8, value: bool) {
+    pub fn set_input(&mut self, id: u16, key: u8, value: bool) {
         if let Some(entity) = self.players.get_mut(&id) {
             let char = match key {
                 0 => 'w',
@@ -72,7 +72,7 @@ impl Game {
         }
     }
 
-    pub fn set_mouse(&mut self, id: i32, rad: f64) {
+    pub fn set_mouse(&mut self, id: u16, rad: f64) {
         if let Some(entity) = self.players.get_mut(&id) {
             entity.angle = rad;
         }
@@ -82,7 +82,7 @@ impl Game {
         let mut players_immut = HashMap::new();
         players_immut.clone_from(&self.players);
 
-        let ids = self.players.keys().cloned().collect::<Vec<i32>>();
+        let ids = self.players.keys().cloned().collect::<Vec<u16>>();
 
         for id in ids {
             let entity = self.players.get_mut(&id).unwrap();
@@ -90,9 +90,9 @@ impl Game {
             entity.update_pos();
             entity.stay_in_bounds(self.map.width, self.map.height);
 
-            let mut candidates: Vec<i32> = Vec::new();
+            let mut candidates: Vec<u16> = Vec::new();
 
-            self.quadtree.search(&entity.bounds, |id: i32| {
+            self.quadtree.search(&entity.bounds, |id: u16| {
                 candidates.push(id);
             });
 

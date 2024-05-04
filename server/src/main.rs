@@ -4,21 +4,20 @@ mod network;
 use futures_util::stream::SplitSink;
 use game::{
     definitions::generate_mockups,
-    game::{Game, GameState},
+    game::{Game, GameState}
 };
 use network::{events::*, messages::*, protocol::Message, server::*};
 use std::{
-    net::{Ipv4Addr, SocketAddrV4},
-    thread,
+    net::{Ipv4Addr, SocketAddrV4}, thread
 };
 use tokio::sync::mpsc::unbounded_channel;
 use warp::{
     ws::{Message as SocketMessage, WebSocket},
-    Filter,
+    Filter
 };
 
 const PORT: u16 = 3000;
-static mut CLIENT_COUNTER: i32 = 0;
+static mut CLIENT_COUNTER: u16 = 0;
 
 #[tokio::main]
 async fn main() {
@@ -50,7 +49,7 @@ async fn main() {
 }
 
 struct Connection {
-    id: i32,
+    id: u16,
     sender: SplitSink<WebSocket, SocketMessage>,
 }
 
@@ -60,7 +59,7 @@ impl Connection {
             CLIENT_COUNTER += 1;
             Self {
                 id: CLIENT_COUNTER,
-                sender,
+                sender
             }
         }
     }

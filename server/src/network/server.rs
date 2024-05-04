@@ -59,7 +59,7 @@ pub fn run(sender: UnboundedSender<BroadcastEvent>, mut receiver: UnboundedRecei
 }
 
 pub async fn broadcast(mut receiver: UnboundedReceiver<BroadcastEvent>) {
-    let mut connections: HashMap<i32, Connection> = HashMap::new();
+    let mut connections: HashMap<u16, Connection> = HashMap::new();
 
     while let Some(event) = receiver.recv().await {
         match event {
@@ -90,7 +90,7 @@ pub async fn listen(game_sender: UnboundedSender<GameEvent>, ws_stream: WebSocke
     println!("Client {} connected", id);
     connection
         .sender
-        .send(SocketMessage::binary(Message::Int32(id).encode()))
+        .send(SocketMessage::binary(Message::Uint16(id).encode()))
         .await
         .unwrap();
 

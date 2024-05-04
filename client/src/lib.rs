@@ -4,6 +4,8 @@ mod game;
 mod listeners;
 mod protocol;
 mod util;
+mod context;
+mod mockup;
 
 extern crate console_error_panic_hook;
 
@@ -50,7 +52,7 @@ fn main() {
         .unwrap_throw();
 
     new_game(ctx);
-    
+
     start_button.set_onclick(Some(
         Closure::<dyn FnMut(_)>::new(move |_: Event| {
             document

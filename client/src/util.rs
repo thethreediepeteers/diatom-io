@@ -13,3 +13,9 @@ pub fn offset_hex(hex_color: &str, offset: u8) -> String {
 pub fn lerp(a: f64, b: f64, c: f64) -> f64 {
     a + (b - a) * c
 }
+
+pub fn lerp_angle(a: f64, b: f64, c: f64) -> f64 {
+    let cos = (1.0 - c) * a.cos() + c * b.cos();
+    let sin = (1.0 - c) * a.sin() + c * b.sin();
+    sin.atan2(cos)
+}

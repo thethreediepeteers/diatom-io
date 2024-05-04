@@ -19,7 +19,11 @@ body {
 }
 
 canvas {
+  position: absolute;
+  top: 0;
   display: none;
+  width: 100vw;
+  height: 100vh;
 }
 
 @font-face {

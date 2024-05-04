@@ -1,13 +1,14 @@
 use crate::{
+    context::Context,
     draw::{draw_connecting, draw_disconnect, draw_entity, draw_grid},
     entity::Entity,
     listeners::add_event_listeners,
+    mockup::Mockups,
     util::lerp,
-    ProtocolMessage,
+    ProtocolMessage
 };
 use gloo_console::console_dbg;
 use gloo_utils::window;
-use serde_json::Value;
 use std::collections::HashMap;
 use web_sys::{
     js_sys::Uint8Array,
@@ -15,23 +16,40 @@ use web_sys::{
     BinaryType, CanvasRenderingContext2d, CloseEvent, MessageEvent, WebSocket,
 };
 
-type Entities = HashMap<i32, Entity>;
+type Entities = HashMap<u16, Entity>;
 
 struct Map {
     width: f64,
     height: f64,
     server_width: f64,
-    server_height: f64,
+    server_height: f64
+}
+
+impl Map {
+    pub fn new_empty() -> Self {
+        Self {
+            width: 0.0,
+            height: 0.0,
+            server_width: 0.0,
+            server_height: 0.0
+        }
+    }
 }
 
 pub struct Game {
-    pub index: Option<i32>,
+    pub index: Option<u16>,
     entities: Entities,
-    ctx: CanvasRenderingContext2d,
+    pub ctx: Context,
     pub colors: HashMap<&'static str, &'static str>,
     pub disconnected: Option<String>,
     map: Map,
-    pub mockups: Value,
+    pub mockups: Mockups,
+    pub window_scale: f64,
+    pub mouse_angle: f64
+}
+
+fn decode_angle(angle: i16) -> f64 {
+    angle as f64 / i16::MAX as f64 * 360.
 }
 
 impl Game {
@@ -41,22 +59,19 @@ impl Game {
             ("blue", "#00B0E1"),
             ("red", "#C83737"),
             ("bg", "#d4d4d4"),
-            ("grid", "#0000001a"),
+            ("grid", "#0000000a")
         ]);
 
         Self {
             index: None,
             entities: Entities::new(),
-            ctx,
+            ctx: Context::new(ctx),
             colors,
             disconnected: None,
-            map: Map {
-                width: 0.0,
-                height: 0.0,
-                server_width: 0.0,
-                server_height: 0.0,
-            },
-            mockups: Value::Null,
+            map: Map::new_empty(),
+            mockups: Mockups::new(),
+            window_scale: 1.0,
+            mouse_angle: 0.0
         }
     }
 
@@ -71,7 +86,7 @@ impl Game {
                             self.map.server_width = *w;
                             self.map.server_height = *h;
                         }
-                        [ProtocolMessage::Int32(id), ProtocolMessage::Int32(mockup_id), ProtocolMessage::Float64(angle), ProtocolMessage::Array(bounds)] =>
+                        [ProtocolMessage::Uint16(id), ProtocolMessage::Uint16(mockup_id), ProtocolMessage::Int16(angle), ProtocolMessage::Array(bounds)] =>
                         // entity update
                         {
                             if let [ProtocolMessage::Float64(min_x), ProtocolMessage::Float64(min_y), ProtocolMessage::Float64(max_x), ProtocolMessage::Float64(max_y)] =
@@ -83,15 +98,15 @@ impl Game {
                                 self.entities
                                     .entry(*id)
                                     .and_modify(|e| {
-                                        e.set_predict(x, y, *max_x - *min_x, *angle);
+                                        e.set_predict(x, y, *max_x - *min_x, decode_angle(*angle));
                                     })
-                                    .or_insert(Entity::new(*id, x, y, 0.0, *mockup_id));
+                                    .or_insert(Entity::new(*id, x, y, 0.0, *mockup_id, self.index.unwrap_or(u16::MAX) == *id));
                             }
 
                             self.entities.retain(|id, _| {
                                 vec.iter().any(|m| match m {
                                     ProtocolMessage::Array(v) if v.len() == 4 => {
-                                        if let [ProtocolMessage::Int32(i), _, _, _] = v.as_slice() {
+                                        if let [ProtocolMessage::Uint16(i), _, _, _] = v.as_slice() {
                                             i == id
                                         } else {
                                             false
@@ -107,8 +122,11 @@ impl Game {
                     };
                 }
             }
-        } else if let ProtocolMessage::Int32(id) = message {
+        } else if let ProtocolMessage::Uint16(id) = message {
             self.index = Some(id);
+            //if let Some((_, entity)) = self.entities.iter_mut().find(|e| e.1.id == id) {
+            //    entity.is_player = true;
+            //}
         }
     }
 
@@ -152,7 +170,7 @@ impl Game {
 
         console_dbg!(format!(
             "mockups: {:?}",
-            self.mockups.as_array().unwrap()[0].as_object().unwrap()
+            self.mockups.as_vec()
         ));
         self.tick();
     }
@@ -173,11 +191,11 @@ impl Game {
     pub fn update(&mut self) {
         let ctx = &self.ctx;
 
-        let width = window().inner_width().unwrap().as_f64().unwrap();
-        let height = window().inner_height().unwrap().as_f64().unwrap();
+        let width = ctx.canvas_width();
+        let height = ctx.canvas_height();
 
         ctx.clear_rect(0.0, 0.0, width, height);
-        ctx.set_fill_style(&JsValue::from_str("#c9c9c9"));
+        ctx.fill_style("#c9c9c9");
         ctx.fill_rect(0.0, 0.0, width, height);
 
         if self.index.is_none() || self.entities.get(&self.index.unwrap_throw()).is_none() {
@@ -194,31 +212,33 @@ impl Game {
         let me = self.entities.get(&self.index.unwrap()).unwrap();
 
         ctx.save();
+        ctx.line_cap("round");
+        ctx.line_join("round");
 
         self.map.width = lerp(self.map.width, self.map.server_width, 0.1);
         self.map.height = lerp(self.map.height, self.map.server_height, 0.1);
 
-        ctx.set_fill_style(&JsValue::from_str(self.colors.get("bg").unwrap()));
+        ctx.fill_style(self.colors.get("bg").unwrap());
         ctx.fill_rect(
-            width / 2.0 - me.pos.x,
-            height / 2.0 - me.pos.y,
-            self.map.width,
-            self.map.height,
+            width / 2.0 - me.pos.x * self.window_scale,
+            height / 2.0 - me.pos.y * self.window_scale,
+            self.map.width * self.window_scale,
+            self.map.height * self.window_scale
         );
 
         draw_grid(
             ctx,
-            (width / 2.0) + me.pos.x,
-            (height / 2.0) + me.pos.y,
-            32.0,
+            width / 2.0 - me.pos.x * self.window_scale,
+            height / 2.0 - me.pos.y * self.window_scale,
+            32.0 * self.window_scale
         );
 
-        ctx.translate(width / 2.0 - me.pos.x, height / 2.0 - me.pos.y)
-            .unwrap_throw();
+        ctx.translate(width / 2.0, height / 2.0);
+        ctx.scale(self.window_scale);
+        ctx.translate(-me.pos.x, -me.pos.y);
 
         for entity in self.entities.values_mut() {
             draw_entity(ctx, entity);
-
             entity.predict();
         }
 
@@ -228,8 +248,7 @@ impl Game {
     async fn get_mockups(&mut self) -> Result<(), reqwest::Error> {
         let addr = format!("http://localhost:3000/mockups.json");
 
-        self.mockups =
-            serde_json::from_str(reqwest::get(addr).await?.text().await?.trim()).unwrap();
+        self.mockups.load(serde_json::from_str(reqwest::get(addr).await?.text().await?.trim()).unwrap());
         Ok(())
     }
 }
