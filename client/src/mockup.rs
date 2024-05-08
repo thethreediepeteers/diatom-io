@@ -4,8 +4,8 @@ trait Loadable {
 
 #[derive(Debug)]
 pub struct Gun {
-    pub x: f64,
-    pub y: f64,
+    pub offset: f64,
+    pub direction: f64,
     pub width: f64,
     pub height: f64,
     pub angle: f64,
@@ -29,8 +29,8 @@ pub struct Mockup {
 impl Loadable for Gun {
     fn load(value: &serde_json::Value) -> Gun {
         Gun {
-            x: value["x"].as_f64().unwrap(),
-            y: value["y"].as_f64().unwrap(),
+            offset: value["offset"].as_f64().unwrap(),
+            direction: value["direction"].as_f64().unwrap(),
             width: value["width"].as_f64().unwrap(),
             height: value["height"].as_f64().unwrap(),
             angle: value["angle"].as_f64().unwrap(),

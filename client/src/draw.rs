@@ -68,23 +68,23 @@ pub fn draw_entity(ctx: &Context, entity: &mut Entity) {
     ctx.global_alpha(1.0);
 
     for gun in mockup.guns.iter() {
-        let x = entity.pos.x + gun.x;
-        let y = entity.pos.y + gun.y;
-        let angle = gun.angle * PI / 180.0 + entity.angle + PI / 2.0;
+        let gx = -gun.offset * (gun.direction + gun.angle + entity.angle).cos();
+        let gy = -gun.offset * (gun.direction + gun.angle + entity.angle).sin();
 
         draw_trapezoid(
             ctx,
-            x + angle.cos() * gun.width,
-            y + angle.sin() * gun.height,
+            entity.pos.x + gx,
+            entity.pos.y + gy,
             gun.width / 2.0,
             gun.height / 2.0,
-            angle,
+            gun.angle + entity.angle  + PI / 2.0,
             gun.aspect,
-            &gun.color
+            &gun.color,
+            0.0,
         );
     }
 
-    draw_shape(
+    draw_poly(
         &ctx,
         mockup.shape,
         entity.pos.x,
@@ -98,7 +98,7 @@ pub fn draw_entity(ctx: &Context, entity: &mut Entity) {
     );
 }
 
-fn draw_shape(
+fn draw_poly(
     ctx: &Context,
     shape: u8,
     x: f64,
@@ -108,7 +108,7 @@ fn draw_shape(
     angle: f64,
     color: &str,
     stroke_color: &str,
-    stroke_width: f64
+    stroke_width: f64,
 ) {
     let height = height / 2.0;
     let width = width / 2.0;
@@ -117,21 +117,18 @@ fn draw_shape(
     if shape == 0 {
         ctx.ellipse(x, y, width, height, angle);
     } else {
-        let r = (height / width).atan();
-        let l = (width * width + height * height).sqrt();
+        for i in 0..shape {
+            let vertex_angle = angle + (i as f64 * PI * 2.0) / shape as f64;
+            let radius = (width + height) / 2.0;
 
-        ctx.begin_path();
-        ctx.move_to(x + l * (angle + r).cos(), y + l * (angle + r).sin());
-        ctx.line_to(
-            x + l * (angle + PI - r).cos(),
-            y + l * (angle + PI - r).sin(),
-        );
-        ctx.line_to(
-            x + l * (angle + PI + r).cos(),
-            y + l * (angle + PI + r).sin(),
-        );
-        ctx.line_to(x + l * (angle - r).cos(), y + l * (angle - r).sin());
-        ctx.close_path();
+            let x1 = x + radius * vertex_angle.cos();
+            let y1 = y + radius * vertex_angle.sin();
+            if i == 0 {
+                ctx.move_to(x1, y1);
+            } else {
+                ctx.line_to(x1, y1);
+            }
+        }
     }
     ctx.close_path();
     ctx.fill_style(&color);
@@ -150,7 +147,8 @@ fn draw_trapezoid(
     height: f64,
     angle: f64,
     aspect: f64,
-    color: &str
+    color: &str,
+    position: f64,
 ) {
     let h = if aspect > 0.0 {
         [width * aspect, width]
@@ -158,29 +156,20 @@ fn draw_trapezoid(
         [width, -width * aspect]
     };
 
-    let r = [h[0].atan2(height), h[1].atan2(height)];
-    let l = [
-        (height * height + h[1] * h[1]).sqrt(),
-        (height * height + h[1] * h[1]).sqrt(),
+    let points: [[f64; 2]; 4] = [
+        [-position, h[1]],
+        [height * 2.0 - position, h[0]],
+        [height * 2.0 - position, -h[0]],
+        [-position, -h[1]],
     ];
 
     ctx.begin_path();
-    ctx.line_to(
-        x + l[0] * (angle + r[0]).cos(),
-        y + l[0] * (angle + r[0]).sin(),
-    );
-    ctx.line_to(
-        x + l[1] * (angle + PI - r[1]).cos(),
-        y + l[1] * (angle + PI - r[1]).sin(),
-    );
-    ctx.line_to(
-        x + l[1] * (angle + PI + r[1]).cos(),
-        y + l[1] * (angle + PI + r[1]).sin(),
-    );
-    ctx.line_to(
-        x + l[0] * (angle - r[0]).cos(),
-        y + l[0] * (angle - r[0]).sin(),
-    );
+    for point in points {
+        ctx.line_to(
+            point[0] * angle.cos() - point[1] * angle.sin() + x,
+            point[0] * angle.sin() + point[1] * angle.cos() + y,
+        );
+    }
     ctx.close_path();
 
     ctx.fill_style(color);
