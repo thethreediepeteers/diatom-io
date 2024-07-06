@@ -1,10 +1,12 @@
 use super::{
-    entity::{Entity, Player, Movement},
+    entity::{Entity, EntityState, Player},
     rect::Rectangle,
 };
 use crate::game::up_search_quadtree::UpSearchQuadTree;
 use rand::random;
 use std::collections::HashMap;
+
+// todo: entity id to u32 (or usize) because 65565 is not so big
 
 #[derive(Copy, Clone)]
 pub struct Map {
@@ -13,11 +15,13 @@ pub struct Map {
 }
 
 pub struct GameState {
-    pub entities: Vec<Box<dyn Entity + Send + Sync>>,
+    pub entities: Vec<EntityState>,
     pub map: Map,
 }
 
 pub struct Game {
+    pub id: u16,
+    entities: HashMap<u16, Box<dyn Entity>>,
     players: HashMap<u16, Player>,
     pub map: Map,
     quadtree: UpSearchQuadTree<u16, 8>,
@@ -30,6 +34,8 @@ impl Game {
             height: 40.0 * 32.0,
         };
         Self {
+            id: 0,
+            entities: HashMap::new(),
             players: HashMap::new(),
             map,
             quadtree: UpSearchQuadTree::new(Rectangle::new(0.0, 0.0, map.width, map.height)),
@@ -44,7 +50,7 @@ impl Game {
             size,
             size,
         );
-        let entity = Player::new(
+        let entity = Box::new(Player::new(
             id,
             0,
             bounds.clone(),
@@ -52,15 +58,23 @@ impl Game {
             HashMap::from([('w', false), ('a', false), ('s', false), ('d', false)]),
             0.0,
             false,
-        );
-        self.players.insert(id, entity);
-        self.quadtree.insert(bounds, id);
+        ));
+        self.id += 1;
+        self.players.insert(id, *entity.clone());
+        self.spawn_entity(entity);
     }
 
-    pub fn remove_player(&mut self, id: u16) {
-        if let Some(_entity) = self.players.remove(&id) {
+    pub fn spawn_entity(&mut self, entity: Box<dyn Entity>) {
+        let id = entity.id();
+        self.quadtree.insert(entity.bounds(), id);
+        self.entities.insert(id, entity);
+    }
+
+    pub fn remove_entity_at_id(&mut self, id: u16) {
+        if let Some(_entity) = self.entities.remove(&id) {
             self.quadtree.remove(id);
         }
+        self.players.remove(&id);
     }
 
     pub fn set_input(&mut self, id: u16, key: u8, value: bool) {
@@ -72,31 +86,33 @@ impl Game {
                 3 => 'd',
                 _ => return,
             };
-            entity.keys.insert(char, value);
+            entity.input_key(char, value);
+            self.entities.get_mut(&id).unwrap().set_keys(&entity.keys);
         }
     }
 
     pub fn set_mouse(&mut self, id: u16, rad: f64) {
         if let Some(entity) = self.players.get_mut(&id) {
-            entity.angle = rad;
+            entity.input_angle(rad);
         }
     }
 
     pub fn set_mouse_click(&mut self, id: u16, b: bool) {
-        if let Some(entity) = self.players.get_mut(&id) {
-            entity.shooting = b;
+        if let Some(entity) = self.players.clone().get_mut(&id) {
+            entity.input_click(b);
+            entity.shoot(self);
         }
     }
 
     pub fn update(&mut self) {
         let mut players_immut = HashMap::new();
-        players_immut.clone_from(&self.players);
+        players_immut.clone_from(&self.entities);
 
-        let ids = self.players.keys().cloned().collect::<Vec<u16>>();
+        let ids = self.entities.keys().cloned().collect::<Vec<u16>>();
 
         for id in ids {
-            let entity = self.players.get_mut(&id).unwrap();
-            entity.shoot();
+            let entity = self.entities.get_mut(&id).unwrap();
+
             entity.update_pos();
             entity.stay_in_bounds(self.map.width, self.map.height);
 
@@ -116,8 +132,7 @@ impl Game {
                     let (x, y) = other_entity.bounds().get_center();
                     let (ex, ey) = entity.bounds().get_center();
 
-                    entity.vel.0 -= (x - ex) / 100.0;
-                    entity.vel.1 -= (y - ey) / 100.0;
+                    entity.set_vel((x - ex) / 100.0, (y - ey) / 100.0);
                 }
             }
 
@@ -130,8 +145,8 @@ impl Game {
             entities: Vec::new(),
             map: self.map,
         };
-        for entity in self.players.values() {
-            state.entities.push(Box::new(entity.clone()));
+        for entity in self.entities.values() {
+            state.entities.push(entity.get_state());
         }
         state
     }

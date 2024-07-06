@@ -43,14 +43,13 @@ impl fmt::Debug for Message {
     }
 }
 
-#[allow(dead_code)]
 /// ## Convert an index to bytes
 /// ### {length of bytes}, {byte}, ...
 ///
 /// Example 1 : 255 -> {1, 255}
 ///
 /// Example 2: 65535 -> {2, 255, 255}
-fn index_to_bytes(i: usize) -> Vec<u8> {
+fn index_to_bytes(i: usize) -> Vec<u8> { // why
     if i < 0x80 {
         vec![1, i as u8]
     } else {
@@ -65,7 +64,7 @@ fn bytes_to_index(len: usize, b: &[u8]) -> usize {
         _ => panic!("Unsupported length"),
     }
 }
-#[allow(dead_code)]
+
 impl Message {
     pub fn encode(&self) -> Vec<u8> {
         match self {

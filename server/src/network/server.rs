@@ -28,7 +28,7 @@ pub fn run(sender: UnboundedSender<BroadcastEvent>, mut receiver: UnboundedRecei
                         let _ = sender.send(BroadcastEvent::Join(conn));
                     }
                     GameEvent::Quit(id) => {
-                        game.remove_player(id);
+                        game.remove_entity_at_id(id);
                         let _ = sender.send(BroadcastEvent::Quit(id));
                     }
                     GameEvent::Input(id, input) => match input {
