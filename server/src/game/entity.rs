@@ -1,18 +1,78 @@
 use super::{game::Game, rect::Rectangle};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug)]
-pub struct Entity {
-    pub id: u16,
-    pub mockup_id: u16,
-    pub bounds: Rectangle,
-    pub vel: (f64, f64),
-    pub keys: HashMap<char, bool>,
-    pub angle: f64
+pub trait Entity {
+    fn id(&self) -> u16;
+    fn mockup_id(&self) -> u16;
+    fn bounds(&self) -> Rectangle;
+    fn angle(&self) -> f64;
+    fn kill(&mut self, game: &mut Game);
 }
 
-impl Entity {
-    pub fn update_pos(&mut self) {
+pub trait Movement {
+    fn update_pos(&mut self);
+    fn stay_in_bounds(&mut self, width: f64, height: f64);
+}
+
+#[derive(Clone)]
+
+pub struct Player {
+    index: u16,
+    mockup_index: u16,
+    bounds: Rectangle,
+    pub vel: (f64, f64),
+    pub keys: HashMap<char, bool>,
+    pub angle: f64,
+    pub shooting: bool,
+}
+
+impl Player {
+    pub fn new(
+        index: u16,
+        mockup_index: u16,
+        bounds: Rectangle,
+        vel: (f64, f64),
+        keys: HashMap<char, bool>,
+        angle: f64,
+        shooting: bool,
+    ) -> Self {
+        Self {
+            index,
+            mockup_index,
+            bounds,
+            vel,
+            keys,
+            angle,
+            shooting,
+        }
+    }
+
+    pub fn shoot(&self) {
+        if self.shooting {
+            println!("player {} is shooting", self.index);
+        }
+    }
+}
+
+impl Entity for Player {
+    fn id(&self) -> u16 {
+        self.index
+    }
+    fn mockup_id(&self) -> u16 {
+        self.mockup_index
+    }
+    fn bounds(&self) -> Rectangle {
+        self.bounds
+    }
+    fn angle(&self) -> f64 {
+        self.angle
+    }
+    fn kill(&mut self, game: &mut Game) {
+        game.remove_player(self.index);
+    }
+}
+impl Movement for Player {
+    fn update_pos(&mut self) {
         let (vx, vy) = self.vel;
         let (x, y) = self.bounds.get_center();
         let size = self.bounds.get_width();
@@ -34,7 +94,7 @@ impl Entity {
         self.vel.1 *= 0.8;
     }
 
-    pub fn stay_in_bounds(&mut self, width: f64, height: f64) {
+    fn stay_in_bounds(&mut self, width: f64, height: f64) {
         let (mut x, mut y) = self.bounds.get_center();
         let size = self.bounds.get_width();
         let half_size = size * 0.5;
@@ -52,10 +112,5 @@ impl Entity {
         }
 
         self.bounds = Rectangle::center_rect(x, y, size, size);
-    }
-
-    #[allow(dead_code)]
-    pub fn kill(&mut self, game: &mut Game) {
-        game.remove_player(self.id);
     }
 }

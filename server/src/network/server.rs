@@ -38,6 +38,9 @@ pub fn run(sender: UnboundedSender<BroadcastEvent>, mut receiver: UnboundedRecei
                         Input::Mouse(rad) => {
                             game.set_mouse(id, rad);
                         }
+                        Input::MouseClick(b) => {
+                            game.set_mouse_click(id, b);
+                        }
                     },
                 }
             }
@@ -115,6 +118,9 @@ pub async fn listen(game_sender: UnboundedSender<GameEvent>, ws_stream: WebSocke
                         },
                         [Message::Float64(rad)] => {
                             let _ = game_sender.send(GameEvent::Input(id, Input::Mouse(*rad)));
+                        }
+                        [Message::Bool(b)] => {
+                            let _ = game_sender.send(GameEvent::Input(id, Input::MouseClick(*b)));
                         }
                         _ => {}
                     }

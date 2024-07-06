@@ -38,7 +38,9 @@ pub fn add_event_listeners(socket: WebSocket) {
     ).forget();
 
     let cloned_socket = socket.clone();
+    let cloned_socket_1 = socket.clone();
     let cloned_socket_2 = socket.clone();
+    let cloned_socket_3 = socket.clone();
 
     EventListener::new(&window, "keydown", move |event: &Event| {
         if cloned_socket.ready_state() != 1 {
@@ -96,6 +98,23 @@ pub fn add_event_listeners(socket: WebSocket) {
             .unwrap_throw();
     }).forget();
 
+    EventListener::new(&window, "mousedown", move |_: &Event| {
+        if cloned_socket_2.ready_state() != 1 {
+            return;
+        }
+        cloned_socket_2
+            .send_with_u8_array(&ProtocolMessage::Array(vec![ProtocolMessage::Bool(true)]).encode())
+            .unwrap_throw();
+    }).forget();
+    EventListener::new(&window, "mouseup", move |_: &Event| {
+        if cloned_socket_3.ready_state() != 1 {
+            return;
+        }
+        cloned_socket_3
+            .send_with_u8_array(&ProtocolMessage::Array(vec![ProtocolMessage::Bool(false)]).encode())
+            .unwrap_throw();
+    }).forget();
+
     EventListener::new(&window, "mousemove", move |event: &Event| {
         let game = get_game();
         let width: f64 = game.ctx.canvas_width();
@@ -104,7 +123,7 @@ pub fn add_event_listeners(socket: WebSocket) {
         let x = event.client_x() as f64;
         let y = event.client_y() as f64;
 
-        if cloned_socket_2.ready_state() != 1 {
+        if cloned_socket_1.ready_state() != 1 {
             return;
         }
 
@@ -115,7 +134,7 @@ pub fn add_event_listeners(socket: WebSocket) {
         let delta_y = y - height / 2.0 / ratio;
         let rad = -delta_x.atan2(delta_y);
         game.mouse_angle = rad;
-        cloned_socket_2
+        cloned_socket_1
             .send_with_u8_array(&ProtocolMessage::Array(vec![ProtocolMessage::Float64(rad)]).encode())
             .unwrap();
     }).forget();

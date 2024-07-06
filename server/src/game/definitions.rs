@@ -1,12 +1,14 @@
 use serde_json::{json, Value};
 use std::f64::consts::PI;
 
-enum Definition {
+#[derive(Debug, Clone)]
+pub enum Definition {
     #[allow(dead_code)]
     Building(Building),
     Unit(Unit),
 }
 
+#[derive(Debug, Clone)]
 struct Building {
     label: String,
     body: Body,
@@ -15,6 +17,7 @@ struct Building {
     guns: Vec<Gun>,
 }
 
+#[derive(Debug, Clone)]
 struct Unit {
     label: String,
     body: Body,
@@ -25,10 +28,12 @@ struct Unit {
     guns: Vec<Gun>,
 }
 
+#[derive(Debug, Clone)]
 struct Body {
     health: u8,
 }
 
+#[derive(Debug, Clone)]
 struct Gun {
     color: String,
     shape: u8,

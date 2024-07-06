@@ -9,6 +9,7 @@ pub enum GameEvent {
 pub enum Input {
     Keys(u8, bool),
     Mouse(f64),
+    MouseClick(bool),
 }
 
 pub enum BroadcastEvent {

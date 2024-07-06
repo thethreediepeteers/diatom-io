@@ -1,4 +1,7 @@
-use super::{entity::Entity, rect::Rectangle};
+use super::{
+    entity::{Entity, Player, Movement},
+    rect::Rectangle,
+};
 use crate::game::up_search_quadtree::UpSearchQuadTree;
 use rand::random;
 use std::collections::HashMap;
@@ -10,14 +13,14 @@ pub struct Map {
 }
 
 pub struct GameState {
-    pub entities: Vec<Entity>,
-    pub map: Map
+    pub entities: Vec<Box<dyn Entity + Send + Sync>>,
+    pub map: Map,
 }
 
 pub struct Game {
-    players: HashMap<u16, Entity>,
+    players: HashMap<u16, Player>,
     pub map: Map,
-    quadtree: UpSearchQuadTree<u16, 8>
+    quadtree: UpSearchQuadTree<u16, 8>,
 }
 
 impl Game {
@@ -29,7 +32,7 @@ impl Game {
         Self {
             players: HashMap::new(),
             map,
-            quadtree: UpSearchQuadTree::new(Rectangle::new(0.0, 0.0, map.width, map.height))
+            quadtree: UpSearchQuadTree::new(Rectangle::new(0.0, 0.0, map.width, map.height)),
         }
     }
 
@@ -41,14 +44,15 @@ impl Game {
             size,
             size,
         );
-        let entity = Entity {
+        let entity = Player::new(
             id,
-            mockup_id: 0,
-            bounds: bounds.clone(),
-            vel: (0.0, 0.0),
-            keys: HashMap::from([('w', false), ('a', false), ('s', false), ('d', false)]),
-            angle: 0.0
-        };
+            0,
+            bounds.clone(),
+            (0.0, 0.0),
+            HashMap::from([('w', false), ('a', false), ('s', false), ('d', false)]),
+            0.0,
+            false,
+        );
         self.players.insert(id, entity);
         self.quadtree.insert(bounds, id);
     }
@@ -78,6 +82,12 @@ impl Game {
         }
     }
 
+    pub fn set_mouse_click(&mut self, id: u16, b: bool) {
+        if let Some(entity) = self.players.get_mut(&id) {
+            entity.shooting = b;
+        }
+    }
+
     pub fn update(&mut self) {
         let mut players_immut = HashMap::new();
         players_immut.clone_from(&self.players);
@@ -86,13 +96,13 @@ impl Game {
 
         for id in ids {
             let entity = self.players.get_mut(&id).unwrap();
-
+            entity.shoot();
             entity.update_pos();
             entity.stay_in_bounds(self.map.width, self.map.height);
 
             let mut candidates: Vec<u16> = Vec::new();
 
-            self.quadtree.search(&entity.bounds, |id: u16| {
+            self.quadtree.search(&entity.bounds(), |id: u16| {
                 candidates.push(id);
             });
 
@@ -103,15 +113,15 @@ impl Game {
 
                 let other_entity = players_immut.get_mut(&candidate);
                 if let Some(other_entity) = other_entity {
-                    let (x, y) = other_entity.bounds.get_center();
-                    let (ex, ey) = entity.bounds.get_center();
+                    let (x, y) = other_entity.bounds().get_center();
+                    let (ex, ey) = entity.bounds().get_center();
 
                     entity.vel.0 -= (x - ex) / 100.0;
                     entity.vel.1 -= (y - ey) / 100.0;
                 }
             }
 
-            self.quadtree.update(entity.bounds, id);
+            self.quadtree.update(entity.bounds(), id);
         }
     }
 
@@ -121,7 +131,7 @@ impl Game {
             map: self.map,
         };
         for entity in self.players.values() {
-            state.entities.push(entity.clone());
+            state.entities.push(Box::new(entity.clone()));
         }
         state
     }
