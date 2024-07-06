@@ -9,7 +9,7 @@ pub enum Definition {
 }
 
 #[derive(Debug, Clone)]
-struct Building {
+pub struct Building {
     label: String,
     body: Body,
     color: String,
@@ -18,7 +18,7 @@ struct Building {
 }
 
 #[derive(Debug, Clone)]
-struct Unit {
+pub struct Unit {
     label: String,
     body: Body,
     color: String,
